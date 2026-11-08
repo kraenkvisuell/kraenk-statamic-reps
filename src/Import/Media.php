@@ -17,8 +17,9 @@ use Statamic\Facades\Glide;
  * into the asset container.
  *
  * The asset path is the old folder + file name (unique, with a timestamp), so it never changes
- * between runs. The local `assets` disk (public/assets) is the mirror of the old originals; when the
- * container is on Bunny, only new and replaced files are uploaded from there. Glide images are
+ * between runs. The `legacy-mirror` disk (storage/app/legacy-media) mirrors the old originals; the
+ * local `assets` disk (public/assets) holds hard links to them, or converted copies where needed
+ * (see produce()). When the container is on Bunny, only new and replaced files are uploaded. Glide images are
  * cleared only for files that were replaced under the same path, so a re-sync never has to render
  * the whole site again.
  */
@@ -78,9 +79,12 @@ class Media
             $this->output->warn('  '.count($this->missing).' media ids referenced by content no longer exist (skipped): '.implode(', ', array_slice(array_keys($this->missing), 0, 20)));
         }
 
-        $mirror = Storage::disk('assets');
+        $mirror = Storage::disk('legacy-mirror');
+        $local = Storage::disk('assets');
         $paths = array_keys($this->used);
         $this->output->line('  '.count($paths).' media files used by the content');
+
+        $this->adopt($paths);
 
         [$new, $replaced] = match (Reps::config('legacy.media_source')) {
             's3' => $this->pullFromDisk($paths),
@@ -94,6 +98,14 @@ class Media
             $this->output->warn('  '.count($absent).' files are missing on the old site too: '.implode(', ', array_slice($absent, 0, 10)));
         }
 
+        // the asset files: new and replaced originals, and any the local disk doesn't have yet
+        $produce = array_values(array_unique(array_merge(
+            $new,
+            $replaced,
+            array_filter(array_diff($paths, $absent), fn ($path) => ! $local->exists($path)),
+        )));
+        $converted = $this->produce($produce);
+
         $container = AssetContainer::findByHandle(Reps::config('assets.container'));
         $remote = $container->diskHandle() !== 'assets';
 
@@ -103,29 +115,30 @@ class Media
             fn ($path) => ! $container->disk()->exists(dirname($path) === '.' ? '.meta/'.basename($path).'.yaml' : dirname($path).'/.meta/'.basename($path).'.yaml'),
         ));
 
-        $upload = array_values(array_unique(array_merge($new, $replaced, $remote ? array_intersect($withoutMeta, $paths) : [])));
+        $changed = array_values(array_unique(array_merge($replaced, $converted)));
+        $upload = array_values(array_unique(array_merge($produce, $remote ? $withoutMeta : [])));
 
         if ($remote && $upload) {
             $this->output->line('  upload to '.$container->diskHandle().': '.count($upload).' files');
 
             if (! $this->dryRun) {
                 foreach ($upload as $path) {
-                    if ($mirror->exists($path)) {
-                        $container->disk()->filesystem()->writeStream($path, $mirror->readStream($path));
+                    if ($local->exists($path)) {
+                        $container->disk()->filesystem()->writeStream($path, $local->readStream($path));
                     }
                 }
             }
         }
 
-        $metas = array_values(array_unique(array_merge($withoutMeta, $replaced)));
+        $metas = array_values(array_unique(array_merge($withoutMeta, $changed)));
 
         if ($metas) {
             $this->output->line('  asset meta: '.count($metas).' files');
         }
 
         if ($this->dryRun) {
-            if ($replaced) {
-                $this->output->line('  Glide images to clear (replaced files): '.count($replaced));
+            if ($changed) {
+                $this->output->line('  Glide images to clear (replaced or converted files): '.count($changed));
             }
 
             return;
@@ -141,15 +154,117 @@ class Media
             }
         }
 
-        foreach ($replaced as $path) {
+        foreach ($changed as $path) {
             if ($asset = $container->asset($path)) {
                 Glide::clearAsset($asset);
             }
         }
 
-        if ($replaced) {
-            $this->output->line('  cleared the Glide images of '.count($replaced).' replaced files');
+        if ($changed) {
+            $this->output->line('  cleared the Glide images of '.count($changed).' replaced or converted files');
         }
+    }
+
+    /**
+     * Files synced before the mirror existed sit on the local asset disk: move them into the
+     * mirror once (only originals, never files this class converted – those have a .reps marker).
+     */
+    protected function adopt(array $paths): void
+    {
+        $mirror = Storage::disk('legacy-mirror');
+        $local = Storage::disk('assets');
+        $moved = 0;
+
+        foreach ($paths as $path) {
+            if ($mirror->exists($path) || ! $local->exists($path)) {
+                continue;
+            }
+
+            $moved++;
+
+            if (! $this->dryRun) {
+                File::ensureDirectoryExists(dirname($mirror->path($path)));
+                rename($local->path($path), $mirror->path($path));
+            }
+        }
+
+        if ($moved) {
+            $this->output->line("  moved $moved originals from the asset disk into the mirror");
+        }
+    }
+
+    /**
+     * Puts the originals onto the local asset disk: a hard link when the file can be used as it is,
+     * a converted copy when it can't – images with a non-sRGB colour profile (Adobe RGB …) are
+     * converted to sRGB (Glide drops profiles, so they would look washed out), and images whose
+     * content doesn't match their extension (PNG/WebP named .jpg) are re-encoded (Glide refuses
+     * them). The mirror keeps the untouched originals, so re-syncs still compare against the old site.
+     *
+     * @return list<string> the paths that were converted
+     */
+    protected function produce(array $paths): array
+    {
+        $mirror = Storage::disk('legacy-mirror');
+        $local = Storage::disk('assets');
+        $formats = ['jpg' => 'JPEG', 'jpeg' => 'JPEG', 'png' => 'PNG', 'webp' => 'WEBP', 'gif' => 'GIF'];
+        $magick = (string) Reps::config('imaging.magick', 'magick');
+        $icc = __DIR__.'/../../resources/icc/sRGB2014.icc';
+        $converted = [];
+
+        foreach ($paths as $path) {
+            if (! $mirror->exists($path)) {
+                continue;
+            }
+
+            $source = $mirror->path($path);
+            $target = $local->path($path);
+            $expected = $formats[strtolower(pathinfo($path, PATHINFO_EXTENSION))] ?? null;
+            $convert = false;
+            $profile = false;
+
+            if ($expected) {
+                $info = Process::run([$magick, 'identify', '-format', '%m|%[icc:description]\n', $source.'[0]']);
+                [$format, $description] = array_pad(explode('|', trim(strtok($info->output(), "\n") ?: '')), 2, '');
+                $profile = $description !== '' && ! str_contains($description, 'sRGB') && $expected !== 'GIF';
+                $convert = $info->successful() && ($profile || ($format && $format !== $expected));
+            }
+
+            if ($convert) {
+                $converted[] = $path;
+            }
+
+            if ($this->dryRun) {
+                continue;
+            }
+
+            File::ensureDirectoryExists(dirname($target));
+            @unlink($target);
+
+            if ($convert) {
+                $args = [$magick, $source];
+                if ($profile) {
+                    array_push($args, '-profile', $icc);
+                }
+                array_push($args, '-quality', '92', "$expected:$target");
+                $result = Process::timeout(300)->run($args);
+
+                if ($result->successful()) {
+                    continue;
+                }
+
+                $this->output->warn("  could not convert $path: ".trim($result->errorOutput()));
+            }
+
+            if (! @link($source, $target)) {
+                copy($source, $target);
+            }
+        }
+
+        if ($converted) {
+            $this->output->line('  converted '.count($converted).' files (colour profile → sRGB, or format ≠ extension)');
+        }
+
+        return $converted;
     }
 
     /**
@@ -170,7 +285,7 @@ class Media
         File::ensureDirectoryExists(dirname($list));
         File::put($list, implode("\n", $paths)."\n");
 
-        $target = rtrim(Storage::disk('assets')->path(''), '/').'/';
+        $target = rtrim(Storage::disk('legacy-mirror')->path(''), '/').'/';
         File::ensureDirectoryExists($target);
 
         $args = ['rsync', '-a', '--partial', '--timeout=120', '--itemize-changes', "--files-from=$list"];
@@ -218,7 +333,7 @@ class Media
     protected function pullFromUrl(array $paths): array
     {
         $base = rtrim((string) Reps::config('legacy.media_url'), '/');
-        $mirror = Storage::disk('assets');
+        $mirror = Storage::disk('legacy-mirror');
         $new = $replaced = [];
         $url = fn ($path) => $base.'/'.implode('/', array_map('rawurlencode', explode('/', $path)));
 
@@ -264,7 +379,7 @@ class Media
     protected function pullFromDisk(array $paths): array
     {
         $source = Storage::disk(Reps::config('legacy.media_disk'));
-        $mirror = Storage::disk('assets');
+        $mirror = Storage::disk('legacy-mirror');
         $new = $replaced = [];
 
         foreach ($paths as $path) {

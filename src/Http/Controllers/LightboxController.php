@@ -4,6 +4,7 @@ namespace Kraenkvisuell\StatamicReps\Http\Controllers;
 
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Kraenkvisuell\StatamicReps\Lightbox\Lightbox;
 use Kraenkvisuell\StatamicReps\Reps;
@@ -52,6 +53,9 @@ class LightboxController
         });
 
         abort_if($groups->isEmpty(), 404);
+
+        // dompdf caches font metrics there
+        File::ensureDirectoryExists(storage_path('fonts'));
 
         $settings = GlobalSet::findByHandle('site_settings')?->in(Site::current()->handle());
 

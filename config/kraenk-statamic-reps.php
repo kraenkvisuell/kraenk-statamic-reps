@@ -179,6 +179,13 @@ return [
             'throw' => false,
             'report' => false,
         ],
+        // untouched copies of the old originals (rsync / download target of reps:import)
+        'legacy-mirror' => [
+            'driver' => 'local',
+            'root' => 'storage/app/legacy-media',
+            'throw' => false,
+            'report' => false,
+        ],
         'legacy-media' => env('LEGACY_S3_BUCKET') ? [
             'driver' => 's3',
             'key' => env('LEGACY_S3_KEY'),
@@ -190,6 +197,11 @@ return [
             'use_path_style_endpoint' => true,
             'throw' => false,
         ] : null,
+    ],
+
+    'imaging' => [
+        // ImageMagick CLI for converting Adobe RGB originals to sRGB during the media sync
+        'magick' => env('REPS_MAGICK_BIN', 'magick'),
     ],
 
     'assets' => [

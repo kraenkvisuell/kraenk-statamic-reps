@@ -3,6 +3,8 @@
 namespace Kraenkvisuell\StatamicReps\Lightbox;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+use Kraenkvisuell\StatamicReps\Portfolio;
 use Kraenkvisuell\StatamicReps\Reps;
 use Statamic\Facades\Asset;
 use Statamic\Facades\Entry;
@@ -77,7 +79,7 @@ class Lightbox
     public function resolve(string $key): ?array
     {
         [$slideshowId, $workId] = array_pad(explode(':', $key, 2), 2, null);
-        $slideshow = $slideshowId ? Entry::find($slideshowId) : null;
+        $slideshow = $slideshowId && Str::isUuid($slideshowId) ? Entry::find($slideshowId) : null;
 
         if (! $slideshow || $slideshow->collectionHandle() !== 'slideshows' || ! $slideshow->published()) {
             return null;
@@ -93,7 +95,7 @@ class Lightbox
         return [
             'key' => $key,
             'slideshow' => $slideshow,
-            'artist' => $slideshow->value('artist') instanceof Collection ? $slideshow->value('artist')->first() : $slideshow->value('artist'),
+            'artist' => Portfolio::artist(collect((array) $slideshow->get('artist'))->first()),
             'work' => $work,
             'asset' => $asset,
             'ratio' => $asset->width() && $asset->height() ? $asset->width() / $asset->height() : 1,

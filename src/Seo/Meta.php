@@ -9,6 +9,7 @@ use Statamic\Contracts\Entries\Entry;
 use Statamic\Facades\Asset as Assets;
 use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Site;
+use Statamic\Fields\Value;
 use Statamic\Statamic;
 
 /**
@@ -30,8 +31,11 @@ class Meta
             : $seo?->get(($this->index ?? 'home').'_'.$key);
         $home = $seo ? fn (string $key) => $seo->get("home_$key") : fn () => null;
 
-        $pageTitle = $get('browser_title') ?: ($this->entry?->value('title') ?? $this->title);
+        $indexLabel = $this->index ? Reps::config("seo.index_pages.{$this->index}") : null;
+        $indexLabel = is_array($indexLabel) ? ($indexLabel[0] ?? null) : $indexLabel;
+        $pageTitle = $get('browser_title') ?: ($this->entry?->value('title') ?? $this->title ?? $indexLabel);
         $isHome = ! $this->entry && ! $this->index && ! $this->title;
+        $pageTitle = $pageTitle instanceof Value ? (string) $pageTitle->value() : $pageTitle;
 
         // an explicit browser title is used as it is, otherwise the title goes into the format
         $title = $get('browser_title') && Reps::config('seo.browser_title_verbatim', true)

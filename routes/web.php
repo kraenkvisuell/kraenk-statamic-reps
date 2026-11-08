@@ -30,7 +30,12 @@ if (Reps::config('slideshow_index_segment')) {
 if (Reps::feature('lightbox')) {
     Route::prefix('!/reps/lightbox')
         ->middleware(Reps::feature('lightbox_requires_login') ? ['auth'] : [])
-        ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class])
+        // Laravel 13 calls the CSRF middleware PreventRequestForgery, older versions VerifyCsrfToken / ValidateCsrfToken
+        ->withoutMiddleware([
+            'Illuminate\\Foundation\\Http\\Middleware\\PreventRequestForgery',
+            'Illuminate\\Foundation\\Http\\Middleware\\ValidateCsrfToken',
+            'Illuminate\\Foundation\\Http\\Middleware\\VerifyCsrfToken',
+        ])
         ->group(function () {
             Route::get('/', [LightboxController::class, 'state'])->name('reps.lightbox.state');
             Route::post('toggle', [LightboxController::class, 'toggle'])->name('reps.lightbox.toggle');
