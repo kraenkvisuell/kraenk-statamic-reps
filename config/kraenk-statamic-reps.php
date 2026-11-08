@@ -207,6 +207,9 @@ return [
     'imaging' => [
         // ImageMagick CLI for converting Adobe RGB originals to sRGB during the media sync
         'magick' => env('REPS_MAGICK_BIN', 'magick'),
+        // animated GIFs are output as the original file instead of a Glide copy (like Nova); `fm`
+        // still forces a conversion
+        'original_gifs' => true,
     ],
 
     'assets' => [

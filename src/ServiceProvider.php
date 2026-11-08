@@ -4,9 +4,12 @@ namespace Kraenkvisuell\StatamicReps;
 
 use Illuminate\Support\Facades\Event;
 use Kraenkvisuell\StatamicReps\Console\Commands;
+use Kraenkvisuell\StatamicReps\Imaging\OriginalGifManipulator;
 use Kraenkvisuell\StatamicReps\Listeners\AdjustBlueprints;
 use Kraenkvisuell\StatamicReps\Listeners\SyncRelations;
 use Kraenkvisuell\StatamicReps\Support\GlobalBlueprints;
+use Statamic\Contracts\Imaging\ImageManipulator;
+use Statamic\Contracts\Imaging\UrlBuilder;
 use Statamic\Events\EntryBlueprintFound;
 use Statamic\Events\EntrySaved;
 use Statamic\Facades\Blink;
@@ -56,6 +59,7 @@ class ServiceProvider extends AddonServiceProvider
         $this->loadJsonTranslationsFrom(__DIR__.'/../lang');
 
         $this->registerDisks();
+        $this->registerImaging();
         $this->registerLegacyConnection();
         $this->registerBlueprints();
 
@@ -65,6 +69,14 @@ class ServiceProvider extends AddonServiceProvider
         Event::listen(EntrySaved::class, SyncRelations::class);
 
         $this->app['router']->pushMiddlewareToGroup('statamic.web', Http\Middleware\RedirectOtherSiteSlugs::class);
+    }
+
+    // GIFs keep their original file instead of a Glide copy (see OriginalGifManipulator)
+    protected function registerImaging(): void
+    {
+        if (Reps::config('imaging.original_gifs', true)) {
+            $this->app->bind(ImageManipulator::class, fn ($app) => new OriginalGifManipulator($app->make(UrlBuilder::class)));
+        }
     }
 
     // disks of the config (Bunny, the local mirror, the old media bucket) unless the site defines them

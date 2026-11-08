@@ -45,6 +45,9 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   Statamic are never touched. Rich text → Bard, nova-cms blocks → `main_content` sets, settings →
   globals (`legacy.settings`, incl. grids), menus → navigations, multi-locale → localizations.
   A second run reports nothing to do. Options `--only=`, `--no-media`, `--keep-deleted`, `--dry-run`.
+- **Animated GIFs keep their original file** (`imaging.original_gifs`): the Glide tag returns the
+  asset's CDN URL for GIFs, like Nova did. Glide re-encoded every frame (minutes per GIF), upscaled
+  small ones and produced files too large for a single upload to Bunny. `fm` still converts.
 - **Media.** An asset's path is the old media folder + file name, so it never changes between runs.
   The local `assets` disk (`public/assets`) mirrors the old originals the content uses (rsync with
   `--files-from` from the server, an S3 disk or a public URL); with the container on Bunny only new
