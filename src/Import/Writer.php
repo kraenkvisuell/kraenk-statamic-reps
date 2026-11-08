@@ -4,7 +4,7 @@ namespace Kraenkvisuell\StatamicReps\Import;
 
 use Carbon\Carbon;
 use Illuminate\Console\Command;
-use Illuminate\Support\Str;
+use Ramsey\Uuid\Uuid;
 use Statamic\Facades\Collection as Collections;
 use Statamic\Facades\Entry;
 use Statamic\Facades\Site;
@@ -23,6 +23,9 @@ class Writer
     protected array $reserved = [];
 
     public array $stats = [];
+
+    /** @var array<string, array<int, true>> legacy ids that exist per collection (references to others are dropped) */
+    public array $known = [];
 
     public function __construct(protected Command $output, protected bool $dryRun) {}
 
@@ -46,8 +49,13 @@ class Writer
 
         $legacyId = (int) $legacyId;
 
+        if (isset($this->known[$collection]) && ! isset($this->known[$collection][$legacyId])) {
+            return null;
+        }
+
+        // deterministic, so references to rows imported later in the run stay the same between runs
         return ($this->load($collection)[$legacyId] ?? null)?->id()
-            ?? ($this->reserved[$collection][$legacyId] ??= (string) Str::uuid());
+            ?? ($this->reserved[$collection][$legacyId] ??= Uuid::uuid5(Uuid::NAMESPACE_URL, "reps:$collection:$legacyId")->toString());
     }
 
     public function exists(string $collection, int|string|null $legacyId): bool
@@ -72,6 +80,8 @@ class Writer
         $slugs = is_array($slug) ? $slug : [$default => $slug];
         $entry = $this->load($collection)[$legacyId] ?? null;
         $isNew = ! $entry;
+
+        $this->ensureTree($collection, $default);
 
         if ($isNew) {
             $entry = Entry::make()->collection($collection)->locale($default)->id($this->id($collection, $legacyId));
@@ -113,6 +123,8 @@ class Writer
 
     protected function localize($origin, string $collection, string $label, string $site, array $values, ?string $slug, bool $published): void
     {
+        $this->ensureTree($collection, $site);
+
         $localization = $origin->in($site);
         $isNew = ! $localization;
 
@@ -140,6 +152,16 @@ class Writer
 
         if (($isNew || $changes) && ! $this->dryRun) {
             $localization->saveQuietly();
+        }
+    }
+
+    // saving an entry of a structured collection needs the site's tree (the eloquent driver has no row yet)
+    protected function ensureTree(string $collection, string $site): void
+    {
+        $structure = Collections::findByHandle($collection)?->structure();
+
+        if ($structure && ! $structure->in($site) && ! $this->dryRun) {
+            $structure->makeTree($site)->save();
         }
     }
 

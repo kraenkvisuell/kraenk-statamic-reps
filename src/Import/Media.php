@@ -3,7 +3,9 @@
 namespace Kraenkvisuell\StatamicReps\Import;
 
 use Illuminate\Console\Command;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use Kraenkvisuell\StatamicReps\Reps;
@@ -82,6 +84,7 @@ class Media
 
         [$new, $replaced] = match (Reps::config('legacy.media_source')) {
             's3' => $this->pullFromDisk($paths),
+            'http' => $this->pullFromUrl($paths),
             default => $this->pullFromServer($paths),
         };
 
@@ -204,6 +207,55 @@ class Media
         }
 
         $this->output->line(sprintf('  rsync: %d new, %d replaced', count($new), count($replaced)));
+
+        return [$new, $replaced];
+    }
+
+    /**
+     * Downloads from the old public media URL (legacy.media_url) the files that are missing locally
+     * or whose size changed (HEAD requests, 20 at a time).
+     */
+    protected function pullFromUrl(array $paths): array
+    {
+        $base = rtrim((string) Reps::config('legacy.media_url'), '/');
+        $mirror = Storage::disk('assets');
+        $new = $replaced = [];
+        $url = fn ($path) => $base.'/'.implode('/', array_map('rawurlencode', explode('/', $path)));
+
+        $existing = array_values(array_filter($paths, fn ($path) => $mirror->exists($path)));
+        $new = array_values(array_diff($paths, $existing));
+
+        foreach (array_chunk($existing, 20) as $chunk) {
+            $responses = Http::pool(fn ($pool) => array_map(fn ($path) => $pool->as($path)->timeout(30)->head($url($path)), $chunk));
+
+            foreach ($chunk as $path) {
+                $response = $responses[$path] ?? null;
+                $length = $response instanceof Response && $response->successful() ? (int) $response->header('Content-Length') : 0;
+
+                if ($length && $length !== $mirror->size($path)) {
+                    $replaced[] = $path;
+                }
+            }
+        }
+
+        if (! $this->dryRun) {
+            foreach (array_chunk(array_merge($new, $replaced), 10) as $chunk) {
+                $responses = Http::pool(fn ($pool) => array_map(fn ($path) => $pool->as($path)->timeout(300)->get($url($path)), $chunk));
+
+                foreach ($chunk as $path) {
+                    $response = $responses[$path] ?? null;
+
+                    if ($response instanceof Response && $response->successful()) {
+                        $mirror->put($path, $response->body());
+                    } else {
+                        $new = array_values(array_diff($new, [$path]));
+                        $replaced = array_values(array_diff($replaced, [$path]));
+                    }
+                }
+            }
+        }
+
+        $this->output->line(sprintf('  media: %d new, %d replaced', count($new), count($replaced)));
 
         return [$new, $replaced];
     }

@@ -38,6 +38,31 @@ class Importer
         $this->only = $only;
     }
 
+    // legacy ids per collection, so references to deleted rows are dropped
+    protected function registerKnownIds(): void
+    {
+        $tables = [
+            'disciplines' => $this->legacy->portfolioTable('disciplines'),
+            'categories' => $this->legacy->portfolioTable('categories'),
+            'artists' => $this->legacy->portfolioTable('artists'),
+            'slideshows' => $this->legacy->portfolioTable('slideshows'),
+            'pages' => 'pages',
+            'news' => $this->legacy->hasTable('posts') ? 'posts' : 'news_items',
+            'productions' => 'productions',
+            'special_categories' => 'special_categories',
+            'special_projects' => 'special_projects',
+            'projects' => $this->legacy->portfolioTable('projects'),
+            'skills' => $this->legacy->portfolioTable('skills'),
+            'clients' => 'logos',
+        ];
+
+        foreach ($tables as $collection => $table) {
+            if ($this->legacy->hasTable($table)) {
+                $this->writer->known[$collection] = array_fill_keys($this->legacy->db()->table($table)->pluck('id')->map(fn ($id) => (int) $id)->all(), true);
+            }
+        }
+    }
+
     protected function wants(string $step): bool
     {
         return ! $this->only || in_array($step, $this->only, true);
@@ -45,6 +70,7 @@ class Importer
 
     public function run(bool $withMedia = true): void
     {
+        $this->registerKnownIds();
         SyncRelations::$enabled = false;
 
         $this->mapPageUrls();
@@ -577,23 +603,51 @@ class Importer
         $settings = $this->legacy->settings();
         $values = [];
 
-        foreach (Reps::config('legacy.settings', []) as $key => [$handle, $field, $type]) {
+        foreach (Reps::config('legacy.settings', []) as $key => $spec) {
+            [$handle, $field, $type, $map] = array_pad($spec, 4, null);
+
             if ($handle !== $global) {
                 continue;
             }
 
             $raw = $settings[$key] ?? null;
-            $values[$field] = match ($type ?? 'text') {
-                'line' => $this->legacy->singleLine($raw ?? '', $locale),
-                'bard' => $this->content->bard($this->legacy->translated($raw ?? '', $locale)),
-                'asset' => $this->media->path($raw),
-                'assets' => $this->media->paths(array_filter(explode(',', (string) $raw))),
-                'raw' => $this->legacy->json($raw),
-                default => trim($this->legacy->translated($raw ?? '', $locale)),
-            };
+            $values[$field] = $type === 'grid'
+                ? $this->settingsGrid($raw, (array) $map, $key, $locale)
+                : $this->settingValue($raw, $type ?? 'text', $locale);
         }
 
         return $values;
+    }
+
+    protected function settingValue(mixed $raw, string $type, string $locale): mixed
+    {
+        return match ($type) {
+            'line' => $this->legacy->singleLine($raw ?? '', $locale),
+            'bard' => $this->content->bard($this->legacy->translated($raw ?? '', $locale)),
+            'asset' => $this->media->path($raw),
+            'assets' => $this->media->paths(array_filter(explode(',', (string) $raw))),
+            'artist' => $this->writer->id('artists', is_numeric($raw) ? $raw : null),
+            'raw' => $this->legacy->json($raw),
+            default => trim($this->legacy->translated($raw ?? '', $locale)),
+        };
+    }
+
+    /** Flexible-content blocks of a setting → grid rows; $map = attribute => type (or [field, type]). */
+    protected function settingsGrid(mixed $raw, array $map, string $key, string $locale): array
+    {
+        return collect($this->legacy->json($raw))->map(function ($block, $i) use ($map, $key, $locale) {
+            $row = ['id' => $this->content->rowId('setting', $key, (string) ($block['key'] ?? $i))];
+
+            foreach ($map as $attribute => $type) {
+                [$field, $type] = is_array($type) ? $type : [$attribute, $type];
+                $value = $block['attributes'][$attribute] ?? null;
+                $row[$field] = $type === 'assets'
+                    ? $this->media->paths(collect($value)->map(fn ($image) => $image['attributes']['image'] ?? null))
+                    : $this->settingValue($value, $type, $locale);
+            }
+
+            return array_filter($row, fn ($v) => $v !== null && $v !== '' && $v !== [] && $v !== false);
+        })->filter(fn ($row) => count($row) > 1)->values()->all();
     }
 
     protected function setGlobals(string $handle, callable $values): void

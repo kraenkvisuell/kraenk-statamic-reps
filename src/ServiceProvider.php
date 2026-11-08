@@ -60,37 +60,19 @@ class ServiceProvider extends AddonServiceProvider
         Event::listen(EntrySaved::class, SyncRelations::class);
     }
 
-    // Bunny Storage (S3 API) for the asset container and the Glide cache, unless the site defines them
+    // disks of the config (Bunny, the local mirror, the old media bucket) unless the site defines them
     protected function registerDisks(): void
     {
-        foreach (['bunny-assets' => 'assets', 'bunny-glide-cache' => 'glide-cache'] as $disk => $root) {
-            if (config("filesystems.disks.$disk")) {
+        foreach (Reps::config('disks', []) as $name => $disk) {
+            if (! $disk || config("filesystems.disks.$name")) {
                 continue;
             }
 
-            config(["filesystems.disks.$disk" => [
-                'driver' => 's3',
-                'key' => env('BUNNY_S3_KEY'),
-                'secret' => env('BUNNY_S3_SECRET'),
-                'region' => env('BUNNY_S3_REGION', 'de'),
-                'bucket' => env('BUNNY_S3_BUCKET'),
-                'endpoint' => env('BUNNY_S3_ENDPOINT', 'https://de-s3.storage.bunnycdn.com'),
-                'url' => env('BUNNY_PUBLIC_URL'),
-                'root' => $root,
-                'use_path_style_endpoint' => true,
-                'throw' => false,
-            ]]);
-        }
+            if (($disk['driver'] ?? null) === 'local' && ! str_starts_with($disk['root'], '/')) {
+                $disk['root'] = base_path($disk['root']);
+            }
 
-        if (! config('filesystems.disks.assets')) {
-            config(['filesystems.disks.assets' => [
-                'driver' => 'local',
-                'root' => public_path('assets'),
-                'url' => '/assets',
-                'visibility' => 'public',
-                'throw' => false,
-                'report' => false,
-            ]]);
+            config(["filesystems.disks.$name" => $disk]);
         }
     }
 

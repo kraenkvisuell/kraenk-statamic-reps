@@ -33,7 +33,12 @@ class Meta
         $pageTitle = $get('browser_title') ?: ($this->entry?->value('title') ?? $this->title);
         $isHome = ! $this->entry && ! $this->index && ! $this->title;
 
-        $title = $pageTitle && ! ($isHome && ! $get('browser_title'))
+        // an explicit browser title is used as it is, otherwise the title goes into the format
+        $title = $get('browser_title') && Reps::config('seo.browser_title_verbatim', true)
+            ? $get('browser_title')
+            : null;
+
+        $title ??= $pageTitle && ! ($isHome && ! $get('browser_title'))
             ? strtr(Reps::config('seo.title_format'), ['{title}' => $pageTitle, '{site}' => $siteName])
             : strtr(Reps::config('seo.home_title_format'), ['{site}' => $siteName]);
 

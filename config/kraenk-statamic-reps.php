@@ -88,6 +88,10 @@ return [
         'clients' => null,
     ],
 
+    // {route_segment} of category routes: per category slug, else the default
+    'category_route_segments' => [],
+    'category_route_segment' => 'category',
+
     // Slideshow URLs accept a trailing /{n} (the slide to start at), as on the old sites.
     'slideshow_index_segment' => true,
 
@@ -98,6 +102,8 @@ return [
     'bard_buttons' => ['h2', 'h3', 'bold', 'italic', 'anchor', 'unorderedlist', 'orderedlist', 'quote', 'removeformat'],
 
     'seo' => [
+        // a filled browser title is the whole <title>; otherwise this format with {title} = the title
+        'browser_title_verbatim' => true,
         // {title} = the entry's browser title or title, {site} = site_settings.website_title
         'title_format' => '{title} | {site}',
         // title of the home page and of pages without own title
@@ -135,6 +141,57 @@ return [
         'orientation' => 'landscape',
     ],
 
+    /*
+    | Disks registered when the site doesn't define them itself: Bunny Storage (S3 API) for the
+    | asset container and the Glide cache, and the old site's media bucket.
+    */
+    'disks' => [
+        'bunny-assets' => [
+            'driver' => 's3',
+            'key' => env('BUNNY_S3_KEY'),
+            'secret' => env('BUNNY_S3_SECRET'),
+            'region' => env('BUNNY_S3_REGION', 'de'),
+            'bucket' => env('BUNNY_S3_BUCKET'),
+            'endpoint' => env('BUNNY_S3_ENDPOINT', 'https://de-s3.storage.bunnycdn.com'),
+            'url' => env('BUNNY_PUBLIC_URL'),
+            'root' => 'assets',
+            'use_path_style_endpoint' => true,
+            'throw' => false,
+        ],
+        'bunny-glide-cache' => [
+            'driver' => 's3',
+            'key' => env('BUNNY_S3_KEY'),
+            'secret' => env('BUNNY_S3_SECRET'),
+            'region' => env('BUNNY_S3_REGION', 'de'),
+            'bucket' => env('BUNNY_S3_BUCKET'),
+            'endpoint' => env('BUNNY_S3_ENDPOINT', 'https://de-s3.storage.bunnycdn.com'),
+            'url' => env('BUNNY_PUBLIC_URL'),
+            'root' => 'glide-cache',
+            'use_path_style_endpoint' => true,
+            'throw' => false,
+        ],
+        // the local mirror of the old originals and the container's disk until it moves to Bunny
+        'assets' => [
+            'driver' => 'local',
+            'root' => 'public/assets', // relative to base_path()
+            'url' => '/assets',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+        'legacy-media' => env('LEGACY_S3_BUCKET') ? [
+            'driver' => 's3',
+            'key' => env('LEGACY_S3_KEY'),
+            'secret' => env('LEGACY_S3_SECRET'),
+            'region' => env('LEGACY_S3_REGION', 'auto'),
+            'bucket' => env('LEGACY_S3_BUCKET'),
+            'endpoint' => env('LEGACY_S3_ENDPOINT'),
+            'root' => env('LEGACY_S3_ROOT', ''),
+            'use_path_style_endpoint' => true,
+            'throw' => false,
+        ] : null,
+    ],
+
     'assets' => [
         'container' => 'main',
         // disk of the container once Bunny credentials are set (reps:install writes `assets` until then)
@@ -165,12 +222,12 @@ return [
         // server of the live Nova site (ssh forge@host, path to the site's directory)
         'server' => null,
         'path' => null,
-        // where the media originals are: 'server' (storage/app/public over rsync) or 's3'
+        // where the media originals are: 'server' (storage/app/public over rsync), 's3' (media_disk)
+        // or 'http' (public URL of the originals, media_url)
         'media_source' => 'server',
-        // for media_source s3: a disk name configured in the site
-        'media_disk' => null,
-        // local copy of the media originals (rsync target), relative to storage_path()
-        'media_mirror' => 'legacy/media',
+        // for media_source s3: the disk (legacy-media is registered from LEGACY_S3_* env vars)
+        'media_disk' => 'legacy-media',
+        'media_url' => null,
         // the old site's base URL, for links in content that point to itself
         'url' => null,
         // old URLs with Nova ids, redirected to the imported entry: pattern => collection
