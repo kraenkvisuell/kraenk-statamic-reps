@@ -17,4 +17,6 @@ here – only content model, import/re-sync, SEO, lightbox, queries, storage.
   (`Content::rowId`), never generate random ids for imported data.
 - Asset paths must never change between runs (old folder + name), otherwise re-syncs would upload
   everything again and the Glide cache would be lost.
+- New blueprint labels, instructions, options or button labels need a German entry in
+  `lang/de.json` (kombinatrotweiss runs the CP in German, like its Nova backend).
 - Test locally against a site: `cd ~/Code/aiartists && php artisan reps:import --dry-run`.

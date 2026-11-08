@@ -51,6 +51,10 @@ class ServiceProvider extends AddonServiceProvider
             __DIR__.'/../stubs/kraenk-statamic-reps.php' => config_path('kraenk-statamic-reps.php'),
         ], 'kraenk-statamic-reps-config');
 
+        // German CP labels for the addon's blueprints (the CP translates field labels with __());
+        // a site's own lang/de.json overrides them
+        $this->loadJsonTranslationsFrom(__DIR__.'/../lang');
+
         $this->registerDisks();
         $this->registerLegacyConnection();
         $this->registerBlueprints();

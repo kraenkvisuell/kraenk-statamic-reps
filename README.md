@@ -57,7 +57,13 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   (title, description, keywords, robots, canonical, hreflang, og/twitter with configurable og:image
   fallbacks), `/sitemap.xml`.
 - **Routes:** `/sitemap.xml`, slideshow URLs with a trailing slide number, 301s from old id URLs
-  (`legacy.id_redirects`), the lightbox endpoints under `/!/reps/lightbox`.
+  (`legacy.id_redirects`), the lightbox endpoints under `/!/reps/lightbox`. On multi-site installs
+  a 404 that is an entry's URL in another site (`/en/<german slug>`) redirects to the entry in the
+  requested site (`localized_slug_redirects`).
+- **German CP.** Blueprint labels, instructions, options, collection/global/navigation titles are
+  written in English and translated in `lang/de.json` (the CP passes them through `__()`). A site
+  gets a German CP with `APP_LOCALE=de` (default in its `config/app.php`) and can override single
+  strings in its own `lang/de.json`. Keep `lang/de.json` complete when adding fields.
 - **Lightbox:** a per-visitor list of works in the session, sortable per artist, as PDF (dompdf, view
   from the site).
 - **Portfolio queries** (`Portfolio`, `{{ reps:works }}`, `{{ reps:artist_categories }}`,
