@@ -59,6 +59,8 @@ class ServiceProvider extends AddonServiceProvider
 
         Event::listen(EntryBlueprintFound::class, AdjustBlueprints::class);
         Event::listen(EntrySaved::class, SyncRelations::class);
+
+        $this->app['router']->pushMiddlewareToGroup('statamic.web', Http\Middleware\RedirectOtherSiteSlugs::class);
     }
 
     // disks of the config (Bunny, the local mirror, the old media bucket) unless the site defines them

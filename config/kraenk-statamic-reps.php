@@ -55,6 +55,10 @@ return [
         'news_link' => false,              // an own link instead of the artist / slideshow
     ],
 
+    // Multi-site: redirect a 404 that is an entry's URL in another site (/en/<german slug>) to
+    // the entry in the requested site, like the old sites that accepted every locale's slug.
+    'localized_slug_redirects' => true,
+
     // CP labels (the old Nova sites renamed slideshows to "Projects" etc.)
     'labels' => [
         'artist' => 'Artist',
