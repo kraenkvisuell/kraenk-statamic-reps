@@ -47,6 +47,18 @@ class WarmGlideCache extends Command
                 $failed += $response->getStatusCode() >= 500 ? 1 : 0;
                 $this->line(sprintf('  %d %s', $response->getStatusCode(), $path));
 
+                // follow redirects on the same host (e.g. / → /de/ on multi-site installs)
+                $location = $response->isRedirection() ? parse_url((string) $response->headers->get('Location')) : null;
+
+                if ($location && (! isset($location['host']) || $location['host'] === $host)) {
+                    $link = '/'.ltrim($location['path'] ?? '', '/');
+
+                    if (! isset($seen[$link])) {
+                        $seen[$link] = true;
+                        $queue[] = $link;
+                    }
+                }
+
                 continue;
             }
 
