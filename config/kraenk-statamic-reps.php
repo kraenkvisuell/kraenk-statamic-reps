@@ -34,6 +34,7 @@ return [
         'overview_categories' => true,     // works flagged per category
         'represents_in_categories' => true, // works chosen to represent the artist in a category
         'captions' => false,
+        'work_translations' => false,      // English work texts on the row (title_en …; multi-site krw)
         'textboxes' => false,              // works that are text boxes (wfr)
         'work_bgcolor' => false,
         'width_in_overview' => false,      // regular / double (wfr)

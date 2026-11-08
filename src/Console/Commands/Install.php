@@ -71,7 +71,7 @@ class Install extends Command
         }
 
         if ($handle === 'slideshows') {
-            $data['dated'] = true;
+            $data['date'] = true;
             $data['sort_dir'] = 'desc';
             $data['date_behavior'] = ['past' => 'public', 'future' => 'public'];
         }

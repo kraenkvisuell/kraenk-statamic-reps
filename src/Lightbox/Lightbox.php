@@ -85,7 +85,7 @@ class Lightbox
             return null;
         }
 
-        $work = collect($slideshow->get('works', []))->firstWhere('id', $workId);
+        $work = collect($slideshow->root()->get('works', []))->firstWhere('id', $workId);
         $asset = ! empty($work['file']) ? Asset::find(Reps::config('assets.container').'::'.$work['file']) : null;
 
         if (! $work || ! $asset || ! $asset->isImage()) {

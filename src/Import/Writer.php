@@ -261,7 +261,11 @@ class Writer
         foreach ($sites as $site) {
             $tree = $structure->in($site) ?? $structure->makeTree($site);
             $current = collect($tree->tree())->pluck('entry')->filter()->values()->all();
-            $existing = $this->dryRun ? $order : array_values(array_filter($order, fn ($id) => Entry::find($id)?->in($site)));
+            // each site's tree holds that site's entries (localizations have their own ids)
+            $existing = array_values(array_filter(array_map(
+                fn ($id) => $this->dryRun ? $id : Entry::find($id)?->in($site)?->id(),
+                $order,
+            )));
             $new = array_values(array_unique(array_merge($existing, array_diff($current, $existing))));
 
             // keep nested children (pages) where they are

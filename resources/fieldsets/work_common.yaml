@@ -3,6 +3,9 @@ fields:
   - { handle: title, field: { type: text, display: Title, width: 50 } }
   - { handle: caption, field: { type: text, display: Caption, width: 50, reps_feature: captions } }
   - { handle: description, field: { type: textarea, display: Description } }
+  - { handle: title_en, field: { type: text, display: 'Title (EN)', width: 50, reps_feature: work_translations } }
+  - { handle: caption_en, field: { type: text, display: 'Caption (EN)', width: 50, reps_feature: work_translations } }
+  - { handle: description_en, field: { type: textarea, display: 'Description (EN)', reps_feature: work_translations } }
   - { handle: show_in_overview, field: { type: toggle, display: 'Show in overview', width: 25, reps_feature: overview } }
   - { handle: is_portfolio_image, field: { type: toggle, display: 'Portfolio image', width: 25, reps_feature: portfolio_images } }
   - { handle: is_startpage_image, field: { type: toggle, display: 'Start page image', width: 25, reps_feature: startpage_images } }

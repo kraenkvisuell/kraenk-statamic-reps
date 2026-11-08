@@ -168,6 +168,8 @@ class Importer
     protected function taxonomyLike(string $table, string $collection): void
     {
         $rows = $this->legacy->portfolio($table);
+        // the old category pages ordered their slideshows by the pivot's sort_order
+        $slideshowOrder = $collection === 'categories' ? $this->pivot('category_slideshow', 'category_id', 'slideshow_id') : collect();
 
         foreach ($rows as $row) {
             [$data, $localized] = $this->sites(
@@ -177,6 +179,7 @@ class Importer
                     'show_in_main_menu' => (bool) ($row->show_in_main_menu ?? false),
                     'bgcolor' => $row->bgcolor ?? null,
                     'og_image' => $this->content->ogImage($row),
+                    'slideshow_order' => $this->writer->ids('slideshows', $slideshowOrder[$row->id] ?? []) ?: null,
                 ], fn ($v) => $v !== null),
                 fn ($locale) => [
                     'title' => $this->legacy->singleLine($row->title, $locale),
@@ -316,6 +319,7 @@ class Importer
             'title' => $this->legacy->singleLine($work->title ?? ''),
             'caption' => Reps::feature('captions') ? $this->legacy->singleLine($work->caption ?? '') : null,
             'description' => trim(strip_tags($this->legacy->translated($work->description ?? ''))),
+            ...$this->workTranslations($work),
             'file' => $this->media->path($work->file ?? null),
             'show_in_overview' => Reps::feature('overview') && (bool) ($work->show_in_overview ?? false),
             'is_portfolio_image' => Reps::feature('portfolio_images') && (bool) ($work->is_artist_portfolio_image ?? false),
@@ -334,6 +338,39 @@ class Importer
             'textbox_order' => $type === 'textbox' ? ($work->textbox_order ?? null) : null,
             'textbox_fontsize' => $type === 'textbox' ? ($work->textbox_fontsize ?? null) : null,
         ], fn ($v) => $v !== null && $v !== '' && $v !== [] && $v !== false);
+    }
+
+    /**
+     * Works are not localizable (one list per slideshow); the texts of the other sites are stored on
+     * the row as title_<site>, caption_<site>, description_<site> when they differ.
+     */
+    protected function workTranslations(object $work): array
+    {
+        $values = [];
+        $default = $this->legacy->defaultLocale();
+
+        foreach ($this->legacy->locales() as $locale => $site) {
+            if ($locale === $default || ! Reps::feature('work_translations')) {
+                continue;
+            }
+
+            foreach (['title' => true, 'caption' => Reps::feature('captions'), 'description' => true] as $field => $enabled) {
+                if (! $enabled) {
+                    continue;
+                }
+
+                $translated = $field === 'description'
+                    ? trim(strip_tags($this->legacy->translated($work->{$field} ?? '', $locale)))
+                    : $this->legacy->singleLine($work->{$field} ?? '', $locale);
+                $original = $field === 'description'
+                    ? trim(strip_tags($this->legacy->translated($work->{$field} ?? '')))
+                    : $this->legacy->singleLine($work->{$field} ?? '');
+
+                $values["{$field}_{$site}"] = $translated !== $original ? $translated : null;
+            }
+        }
+
+        return $values;
     }
 
     protected function embedUrl(?string $url): ?string
@@ -381,7 +418,8 @@ class Importer
         foreach ($rows as $row) {
             [$data, $localized] = $this->sites([
                 'type' => $has('type') ? ($row->type ?: null) : null,
-                'publish_date' => $has('publish_date') && $row->publish_date ? substr((string) $row->publish_date, 0, 10) : null,
+                // the old site showed the creation date when no publish date was set
+                'publish_date' => $has('publish_date') ? substr((string) ($row->publish_date ?: $row->created_at), 0, 10) ?: null : null,
                 'image' => $this->media->path($row->custom_image ?? $row->main_image ?? $row->image ?? null),
                 'overview_image' => $has('overview_image') ? $this->media->path($row->overview_image) : null,
                 'artist' => $this->writer->id('artists', $row->artist_id ?? null),
@@ -734,8 +772,12 @@ class Importer
                     continue;
                 }
 
-                $menu = ($items[$handle] ?? collect())
-                    ->filter(fn ($item) => ! property_exists($item, 'locale') || ! $item->locale || $item->locale === $locale)
+                // nova-menu-builder stores a locale per item, but sites that translate the names in
+                // JSON keep every item under one locale: only filter when the locales differ
+                $all = $items[$handle] ?? collect();
+                $byLocale = $all->pluck('locale')->filter()->unique()->count() > 1;
+                $menu = $all
+                    ->filter(fn ($item) => ! $byLocale || $item->locale === $locale)
                     ->whereNull('parent_id');
 
                 $branches = $menu->map(fn ($item) => $this->branch($item, $items[$handle], $locale))->filter()->values()->all();

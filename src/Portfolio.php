@@ -3,10 +3,12 @@
 namespace Kraenkvisuell\StatamicReps;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Statamic\Contracts\Entries\Entry as EntryContract;
 use Statamic\Facades\Asset;
 use Statamic\Facades\Blink;
 use Statamic\Facades\Entry;
+use Statamic\Facades\Site;
 
 /**
  * Queries over the works that live inside slideshows: an artist's flagged images, the works of a
@@ -22,6 +24,37 @@ use Statamic\Facades\Entry;
  */
 class Portfolio
 {
+    public static function site(): string
+    {
+        return Site::current()->handle();
+    }
+
+    /** The entry in the current site (falls back to the origin when it has no localization there). */
+    public static function local(?EntryContract $entry): ?EntryContract
+    {
+        if (! $entry) {
+            return null;
+        }
+
+        return $entry->root()->in(static::site()) ?? $entry->root();
+    }
+
+    /** Entries by (origin) ids in the given order, localized to the current site, published only. */
+    public static function entries(array $ids): Collection
+    {
+        $ids = array_values(array_filter($ids, fn ($id) => is_string($id) && Str::isUuid($id)));
+
+        if (! $ids) {
+            return collect();
+        }
+
+        return Entry::query()->whereIn('id', $ids)->get()
+            ->sortBy(fn ($e) => array_search($e->id(), $ids))
+            ->map(fn ($e) => static::local($e))
+            ->filter(fn ($e) => $e && $e->published())
+            ->values();
+    }
+
     public static function artist(mixed $artist): ?EntryContract
     {
         if ($artist instanceof Collection) {
@@ -32,33 +65,35 @@ class Portfolio
             return $artist;
         }
 
-        return is_string($artist) && $artist !== '' ? Entry::find($artist) : null;
+        return is_string($artist) && Str::isUuid($artist) ? static::local(Entry::find($artist)) : null;
+    }
+
+    // raw (non-localized) value of a reference field, read from the origin
+    protected static function ids(EntryContract $entry, string $field): array
+    {
+        return array_values(array_filter((array) $entry->root()->get($field, [])));
     }
 
     /** The artist's published slideshows in the artist's order. */
     public static function slideshows(EntryContract $artist, bool $onlyVisible = false): Collection
     {
-        $ids = (array) $artist->get('slideshows', []);
-
-        $slideshows = Blink::once("reps-slideshows-{$artist->id()}", fn () => Entry::query()
-            ->whereIn('id', $ids)
-            ->where('published', true)
-            ->get()
-            ->sortBy(fn ($s) => array_search($s->id(), $ids))
-            ->values());
+        $slideshows = Blink::once('reps-slideshows-'.$artist->root()->id().'-'.static::site(),
+            fn () => static::entries(static::ids($artist, 'slideshows')));
 
         return $onlyVisible && Reps::feature('overview')
-            ? $slideshows->filter(fn ($s) => $s->get('is_visible_in_overview', true) !== false)->values()
+            ? $slideshows->filter(fn ($s) => $s->root()->get('is_visible_in_overview', true) !== false)->values()
             : $slideshows;
     }
 
     /** All work items of a slideshow. */
     public static function items(EntryContract $slideshow, ?EntryContract $artist = null): Collection
     {
-        return Blink::once("reps-items-{$slideshow->id()}", function () use ($slideshow, $artist) {
-            $artist ??= static::artist($slideshow->get('artist'));
+        $slideshow = static::local($slideshow);
 
-            return collect($slideshow->get('works', []))
+        return Blink::once('reps-items-'.$slideshow->id(), function () use ($slideshow, $artist) {
+            $artist ??= static::artist(static::ids($slideshow, 'artist')[0] ?? null);
+
+            return collect($slideshow->root()->get('works', []))
                 ->filter(fn ($work) => $work['enabled'] ?? true)
                 ->values()
                 ->map(fn ($work, $i) => static::item($work, $i + 1, $slideshow, $artist));
@@ -71,8 +106,16 @@ class Portfolio
         $extension = $asset ? strtolower($asset->extension()) : null;
         $isEmbed = ($work['type'] ?? null) === 'embed';
 
+        // translations of the work texts are stored on the row (title_<site> …), see work_common
+        $site = static::site();
+        foreach (['title', 'caption', 'description'] as $field) {
+            if (! empty($work["{$field}_{$site}"])) {
+                $work[$field] = $work["{$field}_{$site}"];
+            }
+        }
+
         return [
-            'key' => $slideshow->id().':'.$work['id'],
+            'key' => $slideshow->root()->id().':'.$work['id'],
             'id' => $work['id'],
             'work' => $work,
             'title' => $work['title'] ?? null,
@@ -129,17 +172,14 @@ class Portfolio
     public static function artistCategories(EntryContract $artist, bool $onlyVisible = true, ?int $workLimit = null): Collection
     {
         $slideshows = static::slideshows($artist, $onlyVisible);
-        $order = Reps::feature('artist_categories_order') ? (array) $artist->get('categories', []) : [];
-        $used = $slideshows->flatMap(fn ($s) => (array) $s->get('categories', []))->unique()->values()->all();
+        $order = Reps::feature('artist_categories_order') ? static::ids($artist, 'categories') : [];
+        $used = $slideshows->flatMap(fn ($s) => static::ids($s, 'categories'))->unique()->values()->all();
         $ids = array_values(array_unique(array_merge(array_intersect($order, $used), $used)));
 
-        $categories = Entry::query()->whereIn('id', $ids)->where('published', true)->get()
-            ->sortBy(fn ($c) => array_search($c->id(), $ids))->values();
-
-        return $categories->map(fn ($category) => [
+        return static::entries($ids)->map(fn ($category) => [
             'category' => $category,
             'slideshows' => $slideshows
-                ->filter(fn ($s) => in_array($category->id(), (array) $s->get('categories', []), true))
+                ->filter(fn ($s) => in_array($category->root()->id(), static::ids($s, 'categories'), true))
                 ->map(fn ($s) => [
                     'slideshow' => $s,
                     'items' => $workLimit ? static::items($s, $artist)->take($workLimit)->values()->all() : static::items($s, $artist)->all(),
@@ -148,15 +188,27 @@ class Portfolio
         ])->filter(fn ($group) => $group['slideshows'])->values();
     }
 
-    /** Published slideshows of a category, newest first (the old sites' category order). */
+    /**
+     * Published slideshows of a category: in the category's own order (slideshow_order, imported from
+     * the old site) and the others newest first.
+     */
     public static function categorySlideshows(EntryContract $category): Collection
     {
-        return Blink::once("reps-category-slideshows-{$category->id()}", fn () => Entry::query()
-            ->where('collection', 'slideshows')
-            ->where('published', true)
-            ->whereJsonContains('categories', $category->id())
-            ->orderBy('date', 'desc')
-            ->get());
+        $category = $category->root();
+
+        return Blink::once('reps-category-slideshows-'.$category->id().'-'.static::site(), function () use ($category) {
+            $order = array_flip(static::ids($category, 'slideshow_order'));
+
+            $origins = Entry::query()
+                ->where('collection', 'slideshows')
+                ->where('site', Site::default()->handle())
+                ->whereJsonContains('categories', $category->id())
+                ->get()
+                ->sortBy(fn ($s) => [isset($order[$s->id()]) ? 0 : 1, $order[$s->id()] ?? -($s->date()?->timestamp ?? 0)])
+                ->values();
+
+            return $origins->map(fn ($s) => static::local($s))->filter(fn ($s) => $s && $s->published())->values();
+        });
     }
 
     /**
@@ -167,23 +219,23 @@ class Portfolio
     public static function categoryArtists(EntryContract $category, int $fallback = 0, ?EntryContract $discipline = null): Collection
     {
         return static::categorySlideshows($category)
-            ->groupBy(fn ($s) => (string) collect((array) $s->get('artist'))->first() ?: $s->get('artist'))
+            ->groupBy(fn ($s) => static::ids($s, 'artist')[0] ?? '')
             ->map(function ($slideshows, $artistId) use ($category, $fallback, $discipline) {
-                $artist = Entry::find($artistId);
+                $artist = static::artist($artistId);
 
-                if (! $artist || ! $artist->published() || $artist->get('is_external')) {
+                if (! $artist || ! $artist->published() || $artist->root()->get('is_external')) {
                     return null;
                 }
 
-                if ($discipline && ! in_array($discipline->id(), (array) $artist->get('disciplines', []), true)) {
+                if ($discipline && ! in_array($discipline->root()->id(), static::ids($artist, 'disciplines'), true)) {
                     return null;
                 }
 
-                $order = (array) $artist->get('slideshows', []);
+                $order = static::ids($artist, 'slideshows');
                 $items = $slideshows
-                    ->sortBy(fn ($s) => array_search($s->id(), $order))
+                    ->sortBy(fn ($s) => array_search($s->root()->id(), $order))
                     ->flatMap(fn ($s) => static::items($s, $artist));
-                $chosen = $items->filter(fn ($item) => in_array($category->id(), (array) ($item['work']['represents_in'] ?? []), true));
+                $chosen = $items->filter(fn ($item) => in_array($category->root()->id(), (array) ($item['work']['represents_in'] ?? []), true));
 
                 if ($chosen->isEmpty() && $fallback) {
                     $chosen = $items->filter(fn ($item) => $item['asset'])->take($fallback);
@@ -207,7 +259,7 @@ class Portfolio
                 'slideshow' => $s,
                 'items' => static::items($s, $artist)
                     ->filter(fn ($item) => $categoryId
-                        ? in_array($categoryId, (array) ($item['work']['overview_categories'] ?? []), true)
+                        ? in_array(Entry::find($categoryId)?->root()->id() ?? $categoryId, (array) ($item['work']['overview_categories'] ?? []), true)
                         : ! empty($item['work']['show_in_overview']))
                     ->values()->all(),
             ])
