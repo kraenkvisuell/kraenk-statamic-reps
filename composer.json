@@ -1,0 +1,45 @@
+{
+    "name": "kraenkvisuell/kraenk-statamic-reps",
+    "description": "Shared backend for kraenkvisuell's artist representation sites (Statamic 6): content model, SEO, legacy Nova import and re-sync, Bunny storage.",
+    "license": "proprietary",
+    "type": "statamic-addon",
+    "require": {
+        "php": "^8.3",
+        "statamic/cms": "^6.0",
+        "statamic/eloquent-driver": "^5.12",
+        "league/flysystem-aws-s3-v3": "^3.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^11.0",
+        "laravel/pint": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Kraenkvisuell\\StatamicReps\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Kraenkvisuell\\StatamicReps\\Tests\\": "tests"
+        }
+    },
+    "extra": {
+        "statamic": {
+            "name": "Kraenk Statamic Reps",
+            "description": "Shared backend for the artist representation sites"
+        },
+        "laravel": {
+            "providers": [
+                "Kraenkvisuell\\StatamicReps\\ServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pixelfear/composer-dist-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
