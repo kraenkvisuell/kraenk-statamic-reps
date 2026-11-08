@@ -166,7 +166,7 @@ class Media
             return [[], []];
         }
 
-        $list = storage_path('reps/media-files.txt');
+        $list = storage_path('app/reps-media-files.txt');
         File::ensureDirectoryExists(dirname($list));
         File::put($list, implode("\n", $paths)."\n");
 
