@@ -25,6 +25,7 @@ class ServiceProvider extends AddonServiceProvider
         Commands\CopyAssetsToBunny::class,
         Commands\WarmGlideCache::class,
         Commands\RefreshUris::class,
+        Commands\Resync::class,
     ];
 
     protected $tags = [

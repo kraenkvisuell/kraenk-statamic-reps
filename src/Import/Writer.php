@@ -24,6 +24,9 @@ class Writer
 
     public array $stats = [];
 
+    /** @var list<string> ids of the entries created or changed in this run (for warming their pages) */
+    public array $touched = [];
+
     /** @var array<string, array<int, true>> legacy ids that exist per collection (references to others are dropped) */
     public array $known = [];
 
@@ -112,6 +115,7 @@ class Writer
         if (($isNew || $changes) && ! $this->dryRun) {
             $entry->saveQuietly();
             $this->entries[$collection][$legacyId] = $entry;
+            $this->touched[] = $entry->id();
         }
 
         foreach ($localized as $site => $values) {
