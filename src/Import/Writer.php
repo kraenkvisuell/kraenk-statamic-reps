@@ -118,8 +118,11 @@ class Writer
             $this->touched[] = $entry->id();
         }
 
-        foreach ($localized as $site => $values) {
-            $this->localize($entry, $collection, $label, $site, $values, $slugs[$site] ?? null, $published);
+        // every site of the collection gets a localization, also when nothing is translated
+        foreach (Collections::findByHandle($collection)->sites() as $site) {
+            if ($site !== $default) {
+                $this->localize($entry, $collection, $label, $site, $localized[$site] ?? [], $slugs[$site] ?? null, $published);
+            }
         }
 
         return $entry->id();
