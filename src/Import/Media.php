@@ -340,7 +340,11 @@ class Media
         $existing = array_values(array_filter($paths, fn ($path) => $mirror->exists($path)));
         $new = array_values(array_diff($paths, $existing));
 
-        foreach (array_chunk($existing, 20) as $chunk) {
+        // Nova gives every upload a new, timestamped name, so files are practically never replaced
+        // under the same name: comparing sizes (one HEAD per file) is optional
+        $check = Reps::config('legacy.media_check_sizes') ? $existing : [];
+
+        foreach (array_chunk($check, 20) as $chunk) {
             $responses = Http::pool(fn ($pool) => array_map(fn ($path) => $pool->as($path)->timeout(30)->head($url($path)), $chunk));
 
             foreach ($chunk as $path) {
@@ -375,28 +379,43 @@ class Media
         return [$new, $replaced];
     }
 
-    /** Copies from an S3 disk (legacy.media_disk) the files that are missing or differ in size. */
+    /**
+     * Copies from an S3 disk (legacy.media_disk) the files that are missing or differ in size. One
+     * listing of the bucket gives all sizes (a few paginated requests instead of one per file).
+     */
     protected function pullFromDisk(array $paths): array
     {
         $source = Storage::disk(Reps::config('legacy.media_disk'));
         $mirror = Storage::disk('legacy-mirror');
         $new = $replaced = [];
+        $wanted = array_flip($paths);
+        $sizes = [];
+
+        foreach ($source->listContents('', true) as $item) {
+            if ($item->isFile() && isset($wanted[$item->path()])) {
+                $sizes[$item->path()] = $item->fileSize();
+            }
+        }
 
         foreach ($paths as $path) {
+            if (! isset($sizes[$path])) {
+                continue; // reported as missing on the old site
+            }
+
             $exists = $mirror->exists($path);
 
-            if ($exists && $mirror->size($path) === $source->size($path)) {
+            if ($exists && $mirror->size($path) === $sizes[$path]) {
                 continue;
             }
 
             $exists ? $replaced[] = $path : $new[] = $path;
 
-            if (! $this->dryRun && $source->exists($path)) {
+            if (! $this->dryRun) {
                 $mirror->writeStream($path, $source->readStream($path));
             }
         }
 
-        $this->output->line(sprintf('  media: %d new, %d replaced', count($new), count($replaced)));
+        $this->output->line(sprintf('  media: %d new, %d replaced (bucket listing)', count($new), count($replaced)));
 
         return [$new, $replaced];
     }
