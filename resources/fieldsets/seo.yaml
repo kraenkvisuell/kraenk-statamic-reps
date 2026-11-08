@@ -1,0 +1,53 @@
+title: SEO
+fields:
+  -
+    handle: browser_title
+    field:
+      type: text
+      display: 'Browser title'
+      instructions: 'Shown in the browser tab and in search results. Empty: the title.'
+      localizable: true
+  -
+    handle: meta_description
+    field:
+      type: textarea
+      display: 'Meta description'
+      localizable: true
+  -
+    handle: meta_keywords
+    field:
+      type: textarea
+      display: 'Meta keywords'
+      localizable: true
+  -
+    handle: robots
+    field:
+      type: checkboxes
+      display: Robots
+      inline: true
+      options:
+        noindex: 'No index'
+        nofollow: 'No follow'
+      localizable: true
+  -
+    handle: og_title
+    field:
+      type: text
+      display: 'og:title'
+      instructions: 'Empty: the browser title.'
+      localizable: true
+  -
+    handle: og_description
+    field:
+      type: textarea
+      display: 'og:description'
+      instructions: 'Empty: the meta description.'
+      localizable: true
+  -
+    handle: og_image
+    field:
+      type: assets
+      display: 'og:image'
+      container: main
+      max_files: 1
+      localizable: false

@@ -1,0 +1,15 @@
+title: 'Work (shared fields)'
+fields:
+  - { handle: title, field: { type: text, display: Title, width: 50 } }
+  - { handle: caption, field: { type: text, display: Caption, width: 50, reps_feature: captions } }
+  - { handle: description, field: { type: textarea, display: Description } }
+  - { handle: show_in_overview, field: { type: toggle, display: 'Show in overview', width: 25, reps_feature: overview } }
+  - { handle: is_portfolio_image, field: { type: toggle, display: 'Portfolio image', width: 25, reps_feature: portfolio_images } }
+  - { handle: is_startpage_image, field: { type: toggle, display: 'Start page image', width: 25, reps_feature: startpage_images } }
+  - { handle: is_discipline_image, field: { type: toggle, display: 'Discipline image', width: 25, reps_feature: discipline_images } }
+  - { handle: overview_categories, field: { type: entries, display: 'Show in category overviews', collections: [categories], mode: select, width: 50, reps_feature: overview_categories } }
+  - { handle: represents_in, field: { type: entries, display: 'Represents the artist in', collections: [categories], mode: select, width: 50, reps_feature: represents_in_categories } }
+  - { handle: width_in_overview, field: { type: button_group, display: 'Width in overview', options: { regular: Regular, double: Double }, width: 50, reps_feature: width_in_overview } }
+  - { handle: width_in_frame, field: { type: button_group, display: 'Width in frame', options: { full: Full, two_thirds: 'Two thirds', half: Half }, width: 50, reps_feature: width_in_frame } }
+  - { handle: custom_ratio, field: { type: text, display: 'Ratio (w:h)', width: 25 } }
+  - { handle: bgcolor, field: { type: color, display: Background, width: 25, reps_feature: work_bgcolor } }

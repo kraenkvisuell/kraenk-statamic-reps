@@ -1,0 +1,64 @@
+title: Artist
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          - { handle: title, field: { type: text, display: Name, required: true, localizable: false } }
+          - { handle: description, field: { type: bard, display: Description, buttons: [h3, h4, bold, italic, anchor, unorderedlist, removeformat], save_html: false, remove_empty_nodes: false, localizable: true } }
+          - { handle: portrait_image, field: { type: assets, display: 'Portrait (image or video)', container: main, max_files: 1, width: 50 } }
+          - { handle: portfolio_image, field: { type: assets, display: 'Portfolio image', instructions: 'Empty: the work flagged as portfolio image.', container: main, max_files: 1, width: 50 } }
+          - handle: slideshows
+            field:
+              type: entries
+              display: Slideshows
+              instructions: 'In the order shown on the artist page.'
+              collections: [slideshows]
+              create: true
+              mode: default
+              localizable: false
+          - { handle: disciplines, field: { type: entries, display: Disciplines, collections: [disciplines], mode: select, localizable: false } }
+          - { handle: categories, field: { type: entries, display: Categories, instructions: 'Filled from the slideshows. Order them to change the order on the artist page.', collections: [categories], mode: select, reps_feature: artist_categories_order, localizable: false } }
+  details:
+    display: Details
+    sections:
+      -
+        fields:
+          - { handle: email, field: { type: text, display: Email, input_type: email, width: 50 } }
+          - { handle: website, field: { type: text, display: Website, input_type: url, width: 50 } }
+          - { import: 'reps::social_links' }
+          - { handle: is_external, field: { type: toggle, display: 'External (no portfolio page)', reps_feature: external_artists } }
+          - { handle: bgcolor, field: { type: color, display: Colour, reps_feature: artist_bgcolor } }
+          - { handle: sedcard_pdf, field: { type: assets, display: 'Sedcard PDF', container: main, max_files: 1 } }
+          - handle: testimonials
+            field:
+              type: grid
+              display: Testimonials
+              mode: stacked
+              reps_feature: artist_testimonials
+              localizable: true
+              fields:
+                - { handle: text, field: { type: textarea, display: Text } }
+                - { handle: client, field: { type: text, display: Client } }
+  skills:
+    display: Skills
+    sections:
+      -
+        fields:
+          - { handle: skill_headline, field: { type: text, display: Headline, reps_feature: artist_skills, localizable: true } }
+          - { handle: skill_text, field: { type: bard, display: Text, buttons: [bold, italic, anchor, unorderedlist], save_html: false, reps_feature: artist_skills, localizable: true } }
+          - { handle: skill_header_image, field: { type: assets, display: 'Header image', container: main, max_files: 1, reps_feature: artist_skills, width: 50 } }
+          - { handle: skill_image, field: { type: assets, display: Image, container: main, max_files: 1, reps_feature: artist_skills, width: 50 } }
+          - { handle: skill_description, field: { type: replicator, display: 'Skill description', reps_feature: artist_skills, localizable: true, sets: { blocks: { display: Blocks, sets: { text: { display: Text, fields: [ { handle: headline, field: { type: text, display: Headline } }, { handle: text, field: { type: bard, display: Text, save_html: false } } ] } } } } } }
+  seo:
+    display: SEO
+    sections:
+      - { fields: [ { import: 'reps::seo' } ] }
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          - { handle: slug, field: { type: slug, required: true, localizable: false, validate: 'max:200' } }
+          - { handle: legacy_id, field: { type: integer, display: 'Old Nova id', read_only: true, visibility: read_only, localizable: false } }

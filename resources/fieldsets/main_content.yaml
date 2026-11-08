@@ -1,0 +1,114 @@
+title: 'Main content'
+fields:
+  -
+    handle: main_content
+    field:
+      type: replicator
+      display: Content
+      collapse: true
+      button_label: 'Add block'
+      localizable: true
+      sets:
+        blocks:
+          display: Blocks
+          sets:
+            text:
+              display: Text
+              icon: text-formatting-markdown
+              fields:
+                - { handle: topline, field: { type: text, display: Topline } }
+                - { handle: headline, field: { type: text, display: Headline } }
+                - { handle: headline_link, field: { type: link, display: 'Headline link' } }
+                - { handle: text, field: { type: bard, display: Text, buttons: [h2, h3, h4, bold, italic, anchor, unorderedlist, orderedlist, quote, table, removeformat], save_html: false, remove_empty_nodes: false } }
+                - { handle: is_centered, field: { type: toggle, display: Centered, width: 25 } }
+                - { handle: is_collapsed, field: { type: toggle, display: Collapsed, width: 25 } }
+                - { handle: headline_for_folded, field: { type: text, display: 'Headline when collapsed', width: 50, if: { is_collapsed: 'equals true' } } }
+                - { handle: content_position, field: { type: button_group, display: Position, options: { left: Left, center: Center, right: Right }, width: 50 } }
+                - { handle: bottom_links, field: { type: grid, display: 'Links below', mode: stacked, add_row: 'Add link', fields: [ { import: 'reps::link' } ] } }
+                - { handle: anchor, field: { type: slug, display: Anchor, generate: false, width: 50 } }
+            text_images:
+              display: 'Text + images'
+              icon: media-image-picture-orientation
+              fields:
+                - { handle: topline, field: { type: text, display: Topline } }
+                - { handle: headline, field: { type: text, display: Headline } }
+                - { handle: headline_link, field: { type: link, display: 'Headline link' } }
+                - { handle: text, field: { type: bard, display: Text, buttons: [h2, h3, h4, bold, italic, anchor, unorderedlist, orderedlist, quote, removeformat], save_html: false, remove_empty_nodes: false } }
+                - { handle: images_position, field: { type: button_group, display: 'Images position', options: { left: Left, right: Right, top: Top }, default: left } }
+                - handle: images
+                  field:
+                    type: grid
+                    display: Images
+                    mode: stacked
+                    add_row: 'Add image'
+                    fields:
+                      - { handle: image, field: { type: assets, display: Image, container: main, max_files: 1 } }
+                      - { handle: caption, field: { type: text, display: Caption } }
+                      - { handle: credits, field: { type: text, display: Credits } }
+                      - { handle: alt, field: { type: text, display: 'Alt text' } }
+                - { handle: bottom_links, field: { type: grid, display: 'Links below', mode: stacked, add_row: 'Add link', fields: [ { import: 'reps::link' } ] } }
+                - { handle: anchor, field: { type: slug, display: Anchor, generate: false, width: 50 } }
+            image:
+              display: Image
+              icon: media-image-picture-orientation
+              fields:
+                - { handle: image, field: { type: assets, display: 'Image or video', container: main, max_files: 1 } }
+                - { handle: topline, field: { type: text, display: Topline } }
+                - { handle: headline, field: { type: text, display: Headline } }
+                - { handle: caption, field: { type: text, display: Caption } }
+                - { handle: subcaption, field: { type: text, display: Subcaption } }
+                - { handle: credits, field: { type: text, display: Credits } }
+                - { handle: link, field: { type: link, display: Link, width: 50 } }
+                - { handle: open_link_in_new_tab, field: { type: toggle, display: 'New tab', width: 50 } }
+                - { handle: width, field: { type: select, display: Width, options: { full: Full, '66%': 'Two thirds', half: Half, '50%': '50%', third: Third, quarter: Quarter, eighth: Eighth }, width: 50 } }
+                - { handle: content_position, field: { type: button_group, display: Position, options: { left: Left, center: Center, right: Right }, width: 50 } }
+                - { handle: anchor, field: { type: slug, display: Anchor, generate: false, width: 50 } }
+            gallery:
+              display: Gallery
+              icon: media-image-picture-gallery
+              fields:
+                - { handle: headline, field: { type: text, display: Headline } }
+                - handle: slides
+                  field:
+                    type: grid
+                    display: Images
+                    mode: stacked
+                    add_row: 'Add image'
+                    fields:
+                      - { handle: image, field: { type: assets, display: Image, container: main, max_files: 1 } }
+                      - { handle: caption, field: { type: text, display: Caption } }
+                      - { handle: link, field: { type: link, display: Link, width: 50 } }
+                      - { handle: open_link_in_new_tab, field: { type: toggle, display: 'New tab', width: 50 } }
+                - { handle: max_columns, field: { type: integer, display: 'Max. columns', width: 33 } }
+                - { handle: ratio, field: { type: text, display: 'Ratio (w:h)', width: 33 } }
+                - { handle: download_file, field: { type: assets, display: Download, container: main, max_files: 1, width: 33 } }
+                - { handle: anchor, field: { type: slug, display: Anchor, generate: false, width: 50 } }
+            video:
+              display: Video
+              icon: media-webcam-video
+              fields:
+                - { handle: topline, field: { type: text, display: Topline } }
+                - { handle: headline, field: { type: text, display: Headline } }
+                - { handle: embed_url, field: { type: video, display: 'Video URL (Vimeo/YouTube)' } }
+                - { handle: embed_code, field: { type: code, display: 'Embed code (instead of the URL)', mode: htmlmixed } }
+                - { handle: file, field: { type: assets, display: 'Video file', container: main, max_files: 1 } }
+                - { handle: caption, field: { type: text, display: Caption } }
+                - { handle: width, field: { type: select, display: Width, options: { full: Full, '66%': 'Two thirds', '50%': Half }, width: 50 } }
+                - { handle: anchor, field: { type: slug, display: Anchor, generate: false, width: 50 } }
+            people:
+              display: People
+              icon: users-multiple
+              fields:
+                - { handle: headline, field: { type: text, display: Headline } }
+                - handle: people
+                  field:
+                    type: grid
+                    display: People
+                    mode: stacked
+                    add_row: 'Add person'
+                    fields:
+                      - { handle: name, field: { type: text, display: Name, width: 50 } }
+                      - { handle: role, field: { type: text, display: Role, width: 50 } }
+                      - { handle: image, field: { type: assets, display: Image, container: main, max_files: 1 } }
+                      - { handle: description, field: { type: bard, display: Description, buttons: [bold, italic, anchor, unorderedlist], save_html: false } }
+                - { handle: anchor, field: { type: slug, display: Anchor, generate: false, width: 50 } }

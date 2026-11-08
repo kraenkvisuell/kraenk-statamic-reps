@@ -1,0 +1,28 @@
+title: Project
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          - { handle: title, field: { type: text, display: Title, required: true, localizable: true } }
+          - { handle: abstract, field: { type: textarea, display: Abstract, localizable: true } }
+          - { handle: industry, field: { type: text, display: Industry, localizable: true, width: 33 } }
+          - { handle: format, field: { type: text, display: Format, localizable: true, width: 33 } }
+          - { handle: skills_text, field: { type: text, display: 'Skills (text)', localizable: true, width: 33 } }
+          - { handle: overview_image, field: { type: assets, display: 'Overview image', container: main, max_files: 1 } }
+          - { handle: artists, field: { type: entries, display: Artists, collections: [artists], mode: select, localizable: false } }
+          - { handle: skills, field: { type: entries, display: Skills, collections: [skills], mode: select, localizable: false } }
+          - { handle: bgcolor, field: { type: color, display: Background } }
+          - { import: 'reps::main_content' }
+  seo:
+    display: SEO
+    sections:
+      - { fields: [ { import: 'reps::seo' } ] }
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          - { handle: slug, field: { type: slug, required: true, localizable: true, validate: 'max:200' } }
+          - { handle: legacy_id, field: { type: integer, display: 'Old Nova id', read_only: true, visibility: read_only, localizable: false } }

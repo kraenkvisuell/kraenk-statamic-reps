@@ -1,0 +1,16 @@
+title: Client
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          - { handle: title, field: { type: text, display: Name, required: true, localizable: false } }
+          - { handle: image, field: { type: assets, display: Logo, container: main, max_files: 1 } }
+          - { handle: show_on_home, field: { type: toggle, display: 'Show on the home page' } }
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          - { handle: legacy_id, field: { type: integer, display: 'Old Nova id', read_only: true, visibility: read_only, localizable: false } }

@@ -1,0 +1,37 @@
+title: News
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          - { handle: title, field: { type: text, display: Title, required: true, localizable: true } }
+          - { handle: subtitle, field: { type: text, display: Subtitle, localizable: true, reps_feature: news_subtitle } }
+          - { handle: type, field: { type: button_group, display: Type, options: { post: Post, artist_link: 'Link to artist', slideshow_link: 'Link to slideshow' }, default: post, reps_feature: news_post_types } }
+          - { handle: publish_date, field: { type: date, display: Date, reps_feature: news_articles } }
+          - { handle: abstract, field: { type: textarea, display: Abstract, localizable: true, reps_feature: news_articles } }
+          - { handle: text, field: { type: bard, display: Text, buttons: [bold, italic, anchor], save_html: false, localizable: true, reps_feature: news_text } }
+          - { handle: image, field: { type: assets, display: 'Image or video', instructions: 'Empty: an image of the slideshow / artist.', container: main, max_files: 1, width: 50 } }
+          - { handle: overview_image, field: { type: assets, display: 'Overview image', container: main, max_files: 1, width: 50, reps_feature: news_articles } }
+          - { handle: image_placeholder, field: { type: text, display: 'Text when there is no image', reps_feature: news_post_types } }
+          - { handle: artist, field: { type: entries, display: Artist, collections: [artists], max_items: 1, mode: select, width: 50 } }
+          - { handle: slideshow, field: { type: entries, display: Slideshow, collections: [slideshows], max_items: 1, mode: select, width: 50 } }
+          - { handle: link, field: { type: link, display: 'Link (instead of the artist / slideshow)', reps_feature: news_link } }
+          - { handle: is_sticky, field: { type: toggle, display: Sticky, width: 25, reps_feature: news_articles } }
+          - { handle: show_logo_as_subline, field: { type: toggle, display: 'Logo as subline', width: 25, reps_feature: news_post_types } }
+          - { handle: width_in_overview, field: { type: button_group, display: 'Width in overview', options: { regular: Regular, double: Double }, width: 50, reps_feature: width_in_overview } }
+          - { handle: width_in_frame, field: { type: button_group, display: 'Width in frame', options: { full: Full, two_thirds: 'Two thirds', half: Half }, width: 50, reps_feature: width_in_frame } }
+          - { handle: title_position, field: { type: select, display: 'Title position', options: { bottom_left: 'Bottom left', bottom_right: 'Bottom right', top_left: 'Top left', top_right: 'Top right' }, width: 50, reps_feature: title_position } }
+          - { handle: bgcolor, field: { type: color, display: Background, width: 50, reps_feature: work_bgcolor } }
+          - { import: 'reps::main_content' }
+  seo:
+    display: SEO
+    sections:
+      - { fields: [ { import: 'reps::seo' } ] }
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          - { handle: slug, field: { type: slug, required: true, localizable: true, validate: 'max:200' } }
+          - { handle: legacy_id, field: { type: integer, display: 'Old Nova id', read_only: true, visibility: read_only, localizable: false } }

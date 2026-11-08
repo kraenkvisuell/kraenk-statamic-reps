@@ -1,0 +1,23 @@
+title: Category
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          - { handle: title, field: { type: text, display: Title, required: true, localizable: true } }
+          - { handle: description, field: { type: bard, display: Description, buttons: [bold, italic, anchor], save_html: false, localizable: true } }
+          - { handle: main_image, field: { type: assets, display: Image, container: main, max_files: 1 } }
+          - { handle: show_in_home_navi, field: { type: toggle, display: 'Show in home navigation', width: 50 } }
+          - { handle: show_in_main_menu, field: { type: toggle, display: 'Show in main menu', width: 50 } }
+  seo:
+    display: SEO
+    sections:
+      - { fields: [ { import: 'reps::seo' } ] }
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          - { handle: slug, field: { type: slug, required: true, localizable: true, validate: 'max:200' } }
+          - { handle: legacy_id, field: { type: integer, display: 'Old Nova id', read_only: true, visibility: read_only, localizable: false } }

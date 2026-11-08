@@ -1,0 +1,21 @@
+title: Link
+fields:
+  -
+    handle: link_text
+    field:
+      type: text
+      display: Text
+      localizable: true
+  -
+    handle: link
+    field:
+      type: link
+      display: Link
+      localizable: true
+  -
+    handle: file
+    field:
+      type: assets
+      display: 'File (instead of the link)'
+      container: main
+      max_files: 1

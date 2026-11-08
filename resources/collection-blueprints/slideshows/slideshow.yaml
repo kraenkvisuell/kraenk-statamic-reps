@@ -1,0 +1,68 @@
+title: Slideshow
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          - { handle: title, field: { type: text, display: Title, required: true, localizable: false } }
+          - { handle: artist, field: { type: entries, display: Artist, collections: [artists], max_items: 1, mode: select, instructions: 'Set by adding the slideshow to an artist.', visibility: read_only, localizable: false } }
+          - { handle: categories, field: { type: entries, display: Categories, collections: [categories], mode: select, localizable: false } }
+          - { handle: discipline, field: { type: entries, display: Discipline, collections: [disciplines], max_items: 1, mode: select, reps_feature: slideshow_disciplines, localizable: false } }
+          - { handle: description, field: { type: bard, display: Description, buttons: [bold, italic, anchor], save_html: false, localizable: true } }
+          - handle: works
+            field:
+              type: replicator
+              display: Works
+              collapse: accordion
+              button_label: 'Add work'
+              localizable: false
+              sets:
+                works:
+                  display: Works
+                  sets:
+                    image:
+                      display: 'Image / video'
+                      icon: media-image-picture-orientation
+                      fields:
+                        - { import: 'reps::work_common' }
+                        - { handle: file, field: { type: assets, display: File, container: main, max_files: 1 } }
+                    embed:
+                      display: Embed
+                      icon: media-webcam-video
+                      fields:
+                        - { import: 'reps::work_common' }
+                        - { handle: embed_url, field: { type: video, display: 'Video URL' } }
+                        - { handle: embed_code, field: { type: code, display: 'Embed code (instead of the URL)', mode: htmlmixed } }
+                        - { handle: embed_ratio, field: { type: text, display: 'Ratio (w:h)', placeholder: '16:9', width: 50 } }
+                        - { handle: file, field: { type: assets, display: 'Preview image', container: main, max_files: 1, width: 50 } }
+                    textbox:
+                      display: 'Text box'
+                      icon: text-formatting-markdown
+                      fields:
+                        - { import: 'reps::work_common' }
+                        - { handle: textbox_text, field: { type: bard, display: Text, buttons: [bold, italic, anchor], save_html: false } }
+                        - { handle: textbox_order, field: { type: button_group, display: Order, options: { image_text: 'Image, text', text_image: 'Text, image' }, width: 50 } }
+                        - { handle: textbox_fontsize, field: { type: button_group, display: 'Font size', options: { small: Small, medium: Medium, large: Large }, width: 50 } }
+                        - { handle: file, field: { type: assets, display: 'Image (optional)', container: main, max_files: 1 } }
+  overview:
+    display: Overview
+    sections:
+      -
+        fields:
+          - { handle: is_visible_in_overview, field: { type: toggle, display: 'Show in the artist overview', default: true, width: 50, reps_feature: overview } }
+          - { handle: show_title, field: { type: toggle, display: 'Show title', default: true, width: 50, reps_feature: show_title } }
+          - { handle: title_position, field: { type: select, display: 'Title position', options: { bottom_left: 'Bottom left', bottom_right: 'Bottom right', top_left: 'Top left', top_right: 'Top right' }, width: 50, reps_feature: title_position } }
+          - { handle: break_after_in_overviews, field: { type: button_group, display: 'Break after', options: { none: None, small: Small, regular: Regular, large: Large }, width: 50, reps_feature: break_after } }
+          - { handle: starts_right, field: { type: toggle, display: 'Starts right', width: 50, reps_feature: starts_right } }
+  seo:
+    display: SEO
+    sections:
+      - { fields: [ { import: 'reps::seo' } ] }
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          - { handle: slug, field: { type: slug, required: true, localizable: false, validate: 'max:200' } }
+          - { handle: legacy_id, field: { type: integer, display: 'Old Nova id', read_only: true, visibility: read_only, localizable: false } }

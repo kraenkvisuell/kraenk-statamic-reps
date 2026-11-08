@@ -1,0 +1,22 @@
+title: 'Social links'
+fields:
+  -
+    handle: social_links
+    field:
+      type: grid
+      display: 'Social links'
+      mode: table
+      add_row: 'Add link'
+      fields:
+        -
+          handle: title
+          field: { type: text, display: Title }
+        -
+          handle: url
+          field: { type: text, display: URL, input_type: url }
+        -
+          handle: network
+          field:
+            type: text
+            display: Network
+            instructions: 'instagram, facebook, behance, linkedin … (picks the icon)'

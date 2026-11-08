@@ -1,0 +1,18 @@
+title: Production
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          - { handle: title, field: { type: text, display: Title, instructions: 'Empty: artist – slideshow.', localizable: true } }
+          - { handle: description, field: { type: bard, display: Description, buttons: [bold, italic, anchor], save_html: false, localizable: true } }
+          - { handle: image, field: { type: assets, display: 'Image or video', instructions: 'Empty: an image of the slideshow.', container: main, max_files: 1 } }
+          - { handle: artist, field: { type: entries, display: Artist, collections: [artists], max_items: 1, mode: select, width: 50 } }
+          - { handle: slideshow, field: { type: entries, display: Slideshow, collections: [slideshows], max_items: 1, mode: select, width: 50 } }
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          - { handle: legacy_id, field: { type: integer, display: 'Old Nova id', read_only: true, visibility: read_only, localizable: false } }

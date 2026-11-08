@@ -1,0 +1,22 @@
+title: Page
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          - { handle: title, field: { type: text, display: Title, required: true, localizable: true } }
+          - { handle: navi_title, field: { type: text, display: 'Title in navigations', localizable: true } }
+          - { import: 'reps::main_content' }
+          - { handle: bg_color, field: { type: color, display: Background, reps_feature: page_bgcolor } }
+  seo:
+    display: SEO
+    sections:
+      - { fields: [ { import: 'reps::seo' } ] }
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          - { handle: slug, field: { type: slug, required: true, localizable: true, validate: 'max:200' } }
+          - { handle: legacy_id, field: { type: integer, display: 'Old Nova id', read_only: true, visibility: read_only, localizable: false } }

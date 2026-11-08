@@ -1,0 +1,17 @@
+title: Skill
+tabs:
+  main:
+    display: Main
+    sections:
+      -
+        fields:
+          - { handle: title, field: { type: text, display: Title, required: true, localizable: true } }
+          - { handle: description, field: { type: bard, display: Description, save_html: false, localizable: true } }
+          - { handle: artists, field: { type: entries, display: Artists, collections: [artists], mode: select, localizable: false } }
+  sidebar:
+    display: Sidebar
+    sections:
+      -
+        fields:
+          - { handle: slug, field: { type: slug, required: true, localizable: true, validate: 'max:200' } }
+          - { handle: legacy_id, field: { type: integer, display: 'Old Nova id', read_only: true, visibility: read_only, localizable: false } }
