@@ -40,7 +40,8 @@ class SyncRelations
         foreach ((array) $entry->get($childrenField, []) as $childId) {
             $child = Entry::find($childId);
 
-            if ($child && $child->get($parentField) !== $entry->id()) {
+            // also re-saved when the parent's slug changed, so the child's URI follows
+            if ($child && ($child->get($parentField) !== $entry->id() || ! str_contains((string) $child->uri(), '/'.$entry->slug().'/'))) {
                 $child->set($parentField, $entry->id())->saveQuietly();
             }
         }

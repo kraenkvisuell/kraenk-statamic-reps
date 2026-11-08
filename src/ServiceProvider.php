@@ -9,7 +9,10 @@ use Kraenkvisuell\StatamicReps\Listeners\SyncRelations;
 use Kraenkvisuell\StatamicReps\Support\GlobalBlueprints;
 use Statamic\Events\EntryBlueprintFound;
 use Statamic\Events\EntrySaved;
+use Statamic\Facades\Blink;
 use Statamic\Facades\Blueprint;
+use Statamic\Facades\Collection;
+use Statamic\Facades\Entry;
 use Statamic\Providers\AddonServiceProvider;
 
 class ServiceProvider extends AddonServiceProvider
@@ -21,6 +24,7 @@ class ServiceProvider extends AddonServiceProvider
         Commands\Import::class,
         Commands\CopyAssetsToBunny::class,
         Commands\WarmGlideCache::class,
+        Commands\RefreshUris::class,
     ];
 
     protected $tags = [
@@ -49,6 +53,8 @@ class ServiceProvider extends AddonServiceProvider
         $this->registerDisks();
         $this->registerLegacyConnection();
         $this->registerBlueprints();
+
+        $this->registerComputedValues();
 
         Event::listen(EntryBlueprintFound::class, AdjustBlueprints::class);
         Event::listen(EntrySaved::class, SyncRelations::class);
@@ -93,6 +99,19 @@ class ServiceProvider extends AddonServiceProvider
         if (! config('database.connections.legacy')) {
             config(['database.connections.legacy' => Reps::config('legacy.connection')]);
         }
+    }
+
+    // slugs of the parent entry, for routes like /slideshows/{artist_slug}/{slug}
+    protected function registerComputedValues(): void
+    {
+        $parentSlug = fn (string $field) => function ($entry) use ($field) {
+            $id = collect((array) $entry->get($field))->first();
+
+            return $id ? Blink::once("reps-slug-$id", fn () => Entry::find($id)?->slug()) : null;
+        };
+
+        Collection::computed('slideshows', 'artist_slug', $parentSlug('artist'));
+        Collection::computed('special_projects', 'special_category_slug', $parentSlug('special_category'));
     }
 
     protected function registerBlueprints(): void

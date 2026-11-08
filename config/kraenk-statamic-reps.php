@@ -72,18 +72,18 @@ return [
     /*
     | Entry URLs per collection, as Statamic collection routes (null = no own pages). Use a string
     | for every site or an array keyed by site handle. Antlers works in routes:
-    | '/projects/{{ artist:slug }}/{{ slug }}'.
+    | '/projects/{artist_slug}/{slug}' ({artist_slug} / {special_category_slug} are computed).
     */
     'routes' => [
         'pages' => '/pages/{slug}',
         'artists' => '/artists/{slug}',
-        'slideshows' => '/slideshows/{{ artist:slug }}/{{ slug }}',
+        'slideshows' => '/slideshows/{artist_slug}/{slug}',
         'categories' => null,
         'disciplines' => null,
         'news' => '/news/{slug}',
         'productions' => null,
         'special_categories' => '/special/{slug}',
-        'special_projects' => '/special/{{ special_category:slug }}/{{ slug }}',
+        'special_projects' => '/special/{special_category_slug}/{slug}',
         'projects' => '/projects/{slug}',
         'clients' => null,
     ],
@@ -128,6 +128,13 @@ return [
         'sitemap_collections' => ['pages', 'artists', 'categories', 'disciplines', 'news', 'special_categories', 'special_projects', 'projects'],
     ],
 
+    'lightbox' => [
+        // Blade view of the site that renders the PDF ($groups: artist + works, $settings)
+        'pdf_view' => 'lightbox.pdf',
+        'paper' => 'a4',
+        'orientation' => 'landscape',
+    ],
+
     'assets' => [
         'container' => 'main',
         // disk of the container once Bunny credentials are set (reps:install writes `assets` until then)
@@ -166,6 +173,11 @@ return [
         'media_mirror' => 'legacy/media',
         // the old site's base URL, for links in content that point to itself
         'url' => null,
+        // old URLs with Nova ids, redirected to the imported entry: pattern => collection
+        // e.g. 'slideshows/{id}/{index?}' => 'slideshows'
+        'id_redirects' => [],
+        // the old site's page URL folder (/pages/slug), for links inside content
+        'page_route' => 'pages',
         // nova_settings keys copied into globals: legacy key => [global handle, field handle]
         'settings' => [],
     ],
