@@ -175,7 +175,8 @@ class Writer
         $changes = [];
 
         foreach ($data as $key => $value) {
-            $blank = $value === null || $value === '' || $value === [] || $value === false;
+            // false is kept: toggles that default to on (show_title …) must stay off
+            $blank = $value === null || $value === '' || $value === [];
             $current = $entry->data()->get($key);
 
             if ($blank) {
@@ -263,10 +264,13 @@ class Writer
             $current = collect($tree->tree())->pluck('entry')->filter()->values()->all();
             // each site's tree holds that site's entries (localizations have their own ids)
             $existing = array_values(array_filter(array_map(
-                fn ($id) => $this->dryRun ? $id : Entry::find($id)?->in($site)?->id(),
+                fn ($id) => Entry::find($id)?->in($site)?->id() ?? ($this->dryRun && ! Entry::find($id) ? $id : null),
                 $order,
             )));
-            $new = array_values(array_unique(array_merge($existing, array_diff($current, $existing))));
+            // entries created in Statamic keep their place after the imported ones; ids of other
+            // sites (left by earlier imports) are dropped
+            $others = array_values(array_filter(array_diff($current, $existing), fn ($id) => Entry::find($id)?->locale() === $site));
+            $new = array_values(array_unique(array_merge($existing, $others)));
 
             // keep nested children (pages) where they are
             if ($new === $current) {

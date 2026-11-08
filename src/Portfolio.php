@@ -244,7 +244,7 @@ class Portfolio
                 return $chosen->isEmpty() ? null : ['artist' => $artist, 'items' => $chosen->values()->all()];
             })
             ->filter()
-            ->sortBy(fn ($group) => mb_strtolower($group['artist']->get('title')))
+            ->sortBy(fn ($group) => Str::lower(Str::ascii($group['artist']->get('title'))))
             ->values();
     }
 
