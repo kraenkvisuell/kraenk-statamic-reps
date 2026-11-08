@@ -87,14 +87,24 @@ class ServiceProvider extends AddonServiceProvider
     // slugs of the parent entry, for routes like /slideshows/{artist_slug}/{slug}
     protected function registerComputedValues(): void
     {
+        // the reference is read from the origin (localizations inherit it), the slug is the parent's
+        // slug in the entry's own site
         $parentSlug = fn (string $field) => function ($entry) use ($field) {
-            $id = collect((array) $entry->get($field))->first();
+            $id = collect((array) $entry->root()->get($field))->first();
+            $site = $entry->locale();
 
-            return $id ? Blink::once("reps-slug-$id", fn () => Entry::find($id)?->slug()) : null;
+            return $id ? Blink::once("reps-slug-$id-$site", function () use ($id, $site) {
+                $parent = Entry::find($id);
+
+                return ($parent?->in($site) ?? $parent)?->slug();
+            }) : null;
         };
 
         Collection::computed('slideshows', 'artist_slug', $parentSlug('artist'));
         Collection::computed('special_projects', 'special_category_slug', $parentSlug('special_category'));
+        Collection::computed('artists', 'discipline_slug', $parentSlug('disciplines'));
+        Collection::computed('categories', 'route_segment', fn ($entry) => Reps::config('category_route_segments.'.$entry->root()->slug())
+            ?? Reps::config('category_route_segment', 'category'));
     }
 
     protected function registerBlueprints(): void
