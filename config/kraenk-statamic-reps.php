@@ -53,6 +53,7 @@ return [
         'news_articles' => false,          // date, abstract, overview image, sticky (krw)
         'news_post_types' => false,        // post / artist link / slideshow link, placeholder text (visualeyes)
         'news_link' => false,              // an own link instead of the artist / slideshow
+        'artist_copy_links' => false,      // "Copy Link" buttons in the CP's artist list (a:<id> / b:<id>, krw)
     ],
 
     // Multi-site: redirect a 404 that is an entry's URL in another site (/en/<german slug>) to
@@ -72,6 +73,15 @@ return [
         'discipline' => 'Discipline',
         'disciplines' => 'Disciplines',
         'news' => 'News',
+        'portfolio_image' => 'Portfolio image',     // the works' flag ("Megamenu image" on visualeyes)
+        'portfolio_images' => 'Portfolio images',   // column in the CP's artist list
+        'startpage_image' => 'Start page image',
+        'startpage_images' => 'Start page images',
+    ],
+
+    // CP artist list (like the old Nova index): portfolio images shown per artist
+    'cp' => [
+        'artist_portfolio_images' => 3,
     ],
 
     /*

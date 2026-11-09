@@ -22,6 +22,9 @@ class ServiceProvider extends AddonServiceProvider
 {
     protected $fieldsetNamespace = 'reps';
 
+    // listing cells with HTML, copy buttons (plain JS, see the file)
+    protected $scripts = [__DIR__.'/../resources/js/cp.js'];
+
     protected $commands = [
         Commands\Install::class,
         Commands\Import::class,
@@ -122,6 +125,8 @@ class ServiceProvider extends AddonServiceProvider
         Collection::computed('slideshows', 'artist_slug', $parentSlug('artist'));
         Collection::computed('special_projects', 'special_category_slug', $parentSlug('special_category'));
         Collection::computed('artists', 'discipline_slug', $parentSlug('disciplines'));
+        Cp\ArtistListing::register();
+
         Collection::computed('categories', 'route_segment', fn ($entry) => Reps::config('category_route_segments.'.$entry->root()->slug())
             ?? Reps::config('category_route_segment', 'category'));
     }

@@ -5,7 +5,12 @@ tabs:
     sections:
       -
         fields:
-          - { handle: title, field: { type: text, display: Name, required: true, localizable: false } }
+          # columns of the CP list only (computed in Cp\ArtistListing, never shown in the form)
+          - { handle: reps_name, field: { type: reps_html, display: Name, visibility: computed, listable: true, if: { title: 'equals __listing_only__' } } }
+          - { handle: reps_copy_links, field: { type: reps_html, display: Links, visibility: computed, listable: true, reps_feature: artist_copy_links, if: { title: 'equals __listing_only__' } } }
+          - { handle: reps_portfolio_images, field: { type: assets, display: 'Portfolio images', container: main, visibility: computed, listable: true, reps_feature: portfolio_images, if: { title: 'equals __listing_only__' } } }
+          - { handle: reps_startpage_images, field: { type: assets, display: 'Start page images', container: main, visibility: computed, listable: true, reps_feature: startpage_images, if: { title: 'equals __listing_only__' } } }
+          - { handle: title, field: { type: text, display: Name, required: true, localizable: false, listable: hidden } }
           - { handle: description, field: { type: bard, display: Description, buttons: [h3, h4, bold, italic, anchor, unorderedlist, removeformat], save_html: false, remove_empty_nodes: false, localizable: true } }
           - { handle: portrait_image, field: { type: assets, display: 'Portrait (image or video)', container: main, max_files: 1, width: 50 } }
           - { handle: portfolio_image, field: { type: assets, display: 'Portfolio image', instructions: 'Empty: the work flagged as portfolio image.', container: main, max_files: 1, width: 50 } }
@@ -18,7 +23,7 @@ tabs:
               create: true
               mode: default
               localizable: false
-          - { handle: disciplines, field: { type: entries, display: Disciplines, collections: [disciplines], mode: select, localizable: false } }
+          - { handle: disciplines, field: { type: entries, display: Disciplines, collections: [disciplines], mode: select, localizable: false, listable: true } }
           - { handle: categories, field: { type: entries, display: Categories, instructions: 'Filled from the slideshows. Order them to change the order on the artist page.', collections: [categories], mode: select, reps_feature: artist_categories_order, localizable: false } }
   details:
     display: Details
@@ -60,5 +65,5 @@ tabs:
     sections:
       -
         fields:
-          - { handle: slug, field: { type: slug, required: true, localizable: false, validate: 'max:200' } }
+          - { handle: slug, field: { type: slug, required: true, localizable: false, validate: 'max:200', listable: hidden } }
           - { handle: legacy_id, field: { type: integer, display: 'Old Nova id', read_only: true, visibility: read_only, localizable: false } }

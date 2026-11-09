@@ -82,6 +82,13 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
 - **Storage:** the `bunny-assets`, `bunny-glide-cache`, `assets` and `legacy-media` disks
   (from `BUNNY_*` / `LEGACY_S3_*`) unless the site defines them; `reps:copy-assets-to-bunny`,
   `reps:warm-glide`, `reps:refresh-uris`.
+- **CP artist list** like the old Nova index (`Cp\ArtistListing`, computed `reps_*` fields in the
+  artist blueprint that only appear in the list): the name with `/slug` underneath (title and slug
+  columns hidden by default), "Copy Link" / "Copy Link 2" buttons copying `a:<Nova id>` /
+  `b:<Nova id>` (feature `artist_copy_links`), portfolio images (`cp.artist_portfolio_images`,
+  label `labels.portfolio_images`), start page images (feature `startpage_images`), disciplines.
+  HTML cells use the `reps_html` fieldtype, whose index component is in `resources/js/cp.js` (plain
+  JS, no build; published to `public/vendor/kraenk-statamic-reps` by `statamic:install`).
 - **Asset metadata cache:** every image a page renders needs its asset's metadata (`.meta/*.yaml` on
   Bunny); uncached that's one Bunny request per image, minutes for an artist page. Sites give it a
   cache store of its own (`asset_meta` in `config/cache.php`), which `cache:clear` – run by composer's

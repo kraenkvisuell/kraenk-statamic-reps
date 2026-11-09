@@ -124,6 +124,15 @@ class AdjustBlueprints
             $field['display'] = Reps::label($handle);
         }
 
+        $labels = [
+            'is_portfolio_image' => 'portfolio_image', 'reps_portfolio_images' => 'portfolio_images',
+            'is_startpage_image' => 'startpage_image', 'reps_startpage_images' => 'startpage_images',
+        ];
+
+        if (isset($labels[$handle])) {
+            $field['display'] = Reps::label($labels[$handle]);
+        }
+
         return $field;
     }
 }
