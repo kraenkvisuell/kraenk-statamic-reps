@@ -130,7 +130,7 @@ class AdjustBlueprints
         return $result;
     }
 
-    /** On/off flags of a work: badges in the row header and actions in its menu (resources/js/cp.js). */
+    /** On/off flags of a work: switches on top of the expanded row, badges in the collapsed one. */
     public const WORK_FLAGS = ['show_in_overview', 'is_portfolio_image', 'is_startpage_image', 'is_discipline_image'];
 
     /**
@@ -158,6 +158,14 @@ class AdjustBlueprints
 
                     unset($config);
                 }
+
+                // the on/off flags as switches on top of the expanded row
+                $fields = $field['sets'][$groupHandle]['sets'][$setHandle]['fields'] ?? [];
+                $isFlag = fn ($item) => in_array($item['handle'] ?? null, static::WORK_FLAGS, true);
+                $field['sets'][$groupHandle]['sets'][$setHandle]['fields'] = [
+                    ...array_values(array_filter($fields, $isFlag)),
+                    ...array_values(array_filter($fields, fn ($item) => ! $isFlag($item))),
+                ];
             }
         }
 

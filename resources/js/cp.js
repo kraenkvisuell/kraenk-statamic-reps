@@ -193,8 +193,9 @@ Statamic.booted(() => {
 
 // Work rows of a slideshow (the `works` replicator), like the old Nova list (see
 // Listeners\AdjustBlueprints::workRows): the collapsed row shows the file large (videos play),
-// then the title and a badge per flag or category that is set; the flags are on/off actions in the
-// row's menu. Statamic's own fieldtypes are extended only for fields marked in the blueprint.
+// then the title and a badge per flag or category that is set (the flags themselves are switches
+// on top of the expanded row). Statamic's own fieldtypes are extended only for fields marked in
+// the blueprint.
 Statamic.booted(() => {
     const app = Statamic.$app;
     const escape = (text) => String(text ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -236,15 +237,5 @@ Statamic.booted(() => {
         const titles = (this.meta?.data || []).filter((item) => (this.value || []).includes(item.id)).map((item) => item.title);
         const label = typeof this.config.reps_flag === 'string' ? this.config.reps_flag : this.config.display;
         return titles.length ? replicatorPreviewHtml(badge(`${__(label)}: ${titles.join(', ')}`)) : null;
-    });
-
-    // "Portfolio image" on/off … in the row menu, for the flags the row has
-    Object.entries(Statamic.$config.get('repsWorkFlags') || {}).forEach(([handle, label]) => {
-        Statamic.$fieldActions.add('replicator-fieldtype-set', {
-            title: __(label),
-            icon: ({ values }) => (values?.[handle] ? 'checkbox' : 'checkbox-uncheck'),
-            visible: ({ config }) => (config?.fields || []).some((field) => field.handle === handle && field.reps_flag),
-            run: ({ values, update }) => update(handle, !values?.[handle]),
-        });
     });
 });
