@@ -31,8 +31,8 @@ document.addEventListener(
 );
 
 // Rows of the artist's slideshows field (Fieldtypes\Slideshows), like the old Nova list: position
-// dropdown, title with categories, the works' thumbnails, number of works, actions. Extends
-// Statamic's own row (inline edit stack, unlink); `$parent` is the relationship input.
+// dropdown, title with categories, the works' thumbnails, number of works, actions (no unlink: a
+// slideshow always belongs to its artist). Extends Statamic's own row (inline edit stack); `$parent` is the relationship input.
 Statamic.booted(() => {
     const Base = Statamic.$app.component('relationship-input')?.components?.RelatedItem;
 
@@ -125,7 +125,8 @@ Statamic.booted(() => {
                     this.editable && valid && reps.visible_in_overview !== null && reps.visible_in_overview !== undefined
                         ? h(DropdownItem, { text: __(reps.visible_in_overview ? 'Hide in the artist overview' : 'Show in the artist overview again'), onClick: () => this.toggle('visible_in_overview') })
                         : null,
-                    h(DropdownItem, { text: __('Unlink'), variant: 'destructive', onClick: () => this.$emit('removed') }),
+                    // only to clean up a slideshow that no longer exists
+                    valid ? null : h(DropdownItem, { text: __('Unlink'), variant: 'destructive', onClick: () => this.$emit('removed') }),
                 ]),
             });
 
