@@ -27,6 +27,11 @@ class AdjustBlueprints
 
     public static function adjust(array $contents, string $handle): array
     {
+        // the artists' slideshows tab is named like the slideshows ("Projects" on some sites)
+        if (isset($contents['tabs']['slideshows'])) {
+            $contents['tabs']['slideshows']['display'] = Reps::label('slideshows');
+        }
+
         foreach ($contents['tabs'] ?? [] as $tabHandle => $tab) {
             foreach ($tab['sections'] ?? [] as $i => $section) {
                 $contents['tabs'][$tabHandle]['sections'][$i]['fields'] = static::fields($section['fields'] ?? []);
