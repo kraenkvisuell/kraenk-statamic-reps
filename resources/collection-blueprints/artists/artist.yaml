@@ -26,7 +26,7 @@ tabs:
       -
         fields:
           - { handle: title, field: { type: text, display: Name, required: true, localizable: false, listable: hidden } }
-          - { handle: description, field: { type: bard, display: Description, buttons: [h3, h4, bold, italic, anchor, unorderedlist, removeformat], save_html: false, remove_empty_nodes: false, localizable: true } }
+          - { handle: description, field: { type: bard, display: Description, buttons: [h2, h3, h4, bold, italic, underline, strikethrough, anchor, unorderedlist, quote, removeformat], save_html: false, remove_empty_nodes: false, localizable: true } }
           - { handle: portrait_image, field: { type: assets, display: 'Portrait (image or video)', container: main, max_files: 1, width: 50 } }
           - { handle: portfolio_image, field: { type: assets, display: 'Portfolio image', instructions: 'Empty: the work flagged as portfolio image.', container: main, max_files: 1, width: 50 } }
           - { handle: disciplines, field: { type: entries, display: Disciplines, collections: [disciplines], mode: select, localizable: false, listable: true } }
@@ -61,7 +61,7 @@ tabs:
           - { handle: skill_text, field: { type: bard, display: Text, buttons: [bold, italic, anchor, unorderedlist], save_html: false, reps_feature: artist_skills, localizable: true } }
           - { handle: skill_header_image, field: { type: assets, display: 'Header image', container: main, max_files: 1, reps_feature: artist_skills, width: 50 } }
           - { handle: skill_image, field: { type: assets, display: Image, container: main, max_files: 1, reps_feature: artist_skills, width: 50 } }
-          - { handle: skill_description, field: { type: replicator, display: 'Skill description', reps_feature: artist_skills, localizable: true, sets: { blocks: { display: Blocks, sets: { text: { display: Text, fields: [ { handle: headline, field: { type: text, display: Headline } }, { handle: text, field: { type: bard, display: Text, save_html: false } } ] } } } } } }
+          - { handle: skill_description, field: { type: replicator, display: 'Skill description', reps_feature: artist_skills, localizable: true, sets: { blocks: { display: Blocks, sets: { text: { display: Text, fields: [ { handle: headline, field: { type: text, display: Headline } }, { handle: text, field: { type: bard, display: Text, buttons: [h2, h3, h4, bold, italic, underline, anchor, unorderedlist, orderedlist, quote, horizontalrule, removeformat], save_html: false } } ] } } } } } }
   seo:
     display: SEO
     sections:

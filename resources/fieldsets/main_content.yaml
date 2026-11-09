@@ -19,7 +19,7 @@ fields:
                 - { handle: topline, field: { type: text, display: Topline } }
                 - { handle: headline, field: { type: text, display: Headline } }
                 - { handle: headline_link, field: { type: link, display: 'Headline link' } }
-                - { handle: text, field: { type: bard, display: Text, buttons: [h2, h3, h4, bold, italic, anchor, unorderedlist, orderedlist, quote, table, removeformat], save_html: false, remove_empty_nodes: false } }
+                - { handle: text, field: { type: bard, display: Text, buttons: [h1, h2, h3, h4, h5, bold, italic, underline, anchor, unorderedlist, orderedlist, quote, table, horizontalrule, removeformat], save_html: false, remove_empty_nodes: false } }
                 - { handle: is_centered, field: { type: toggle, display: Centered, width: 25 } }
                 - { handle: is_collapsed, field: { type: toggle, display: Collapsed, width: 25 } }
                 - { handle: headline_for_folded, field: { type: text, display: 'Headline when collapsed', width: 50, if: { is_collapsed: 'equals true' } } }
@@ -33,7 +33,7 @@ fields:
                 - { handle: topline, field: { type: text, display: Topline } }
                 - { handle: headline, field: { type: text, display: Headline } }
                 - { handle: headline_link, field: { type: link, display: 'Headline link' } }
-                - { handle: text, field: { type: bard, display: Text, buttons: [h2, h3, h4, bold, italic, anchor, unorderedlist, orderedlist, quote, removeformat], save_html: false, remove_empty_nodes: false } }
+                - { handle: text, field: { type: bard, display: Text, buttons: [h1, h2, h3, h4, h5, bold, italic, underline, anchor, unorderedlist, orderedlist, quote, horizontalrule, removeformat], save_html: false, remove_empty_nodes: false } }
                 - { handle: images_position, field: { type: button_group, display: 'Images position', options: { left: Left, right: Right, top: Top }, default: left } }
                 - handle: images
                   field:
