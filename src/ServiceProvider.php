@@ -27,6 +27,7 @@ class ServiceProvider extends AddonServiceProvider
         Commands\Import::class,
         Commands\CopyAssetsToBunny::class,
         Commands\WarmGlideCache::class,
+        Commands\WarmAssetMeta::class,
         Commands\RefreshUris::class,
         Commands\Resync::class,
     ];

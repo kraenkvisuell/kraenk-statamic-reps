@@ -82,3 +82,10 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
 - **Storage:** the `bunny-assets`, `bunny-glide-cache`, `assets` and `legacy-media` disks
   (from `BUNNY_*` / `LEGACY_S3_*`) unless the site defines them; `reps:copy-assets-to-bunny`,
   `reps:warm-glide`, `reps:refresh-uris`.
+- **Asset metadata cache:** every image a page renders needs its asset's metadata (`.meta/*.yaml` on
+  Bunny); uncached that's one Bunny request per image, minutes for an artist page. Sites give it a
+  cache store of its own (`asset_meta` in `config/cache.php`), which `cache:clear` – run by composer's
+  `statamic:install` on every install – leaves alone. `reps:warm-asset-meta` loads all metadata in
+  parallel (about 5 minutes for 15,000 assets; seconds when everything is cached), in the deploy
+  script before `static:warm`. Metadata edited in another environment (the bucket is shared) stays
+  cached until `php artisan cache:clear asset_meta`.
