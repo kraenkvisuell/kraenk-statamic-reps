@@ -82,6 +82,7 @@ return [
     // CP artist list (like the old Nova index): portfolio images shown per artist
     'cp' => [
         'artist_portfolio_images' => 3,
+        'slideshow_thumbnails' => 99,      // works shown per slideshow in the artist's slideshows field
     ],
 
     /*

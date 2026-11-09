@@ -12,7 +12,7 @@ tabs:
           - { handle: reps_startpage_images, field: { type: assets, display: 'Start page images', container: main, visibility: computed, listable: true, reps_feature: startpage_images, if: { title: 'equals __listing_only__' } } }
           - handle: slideshows
             field:
-              type: entries
+              type: reps_slideshows
               display: Slideshows
               instructions: 'In the order shown on the artist page.'
               collections: [slideshows]
