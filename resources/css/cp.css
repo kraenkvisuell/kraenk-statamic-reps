@@ -1,0 +1,14 @@
+/* CP additions of the addon (published like resources/js/cp.js). */
+
+/* A multisite field shows the default language's text as the placeholder of an untranslated Bard
+   field. Bard's placeholder takes no height (float + height 0), so a long text ran out of the box:
+   let it take its height, at most four lines. */
+.multisite-fieldtype .ProseMirror > .is-editor-empty:first-child::before {
+    float: none;
+    height: auto;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    overflow: hidden;
+    margin-bottom: -1lh;
+}

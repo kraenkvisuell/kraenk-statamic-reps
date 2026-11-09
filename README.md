@@ -18,6 +18,26 @@ slideshow in a stack) and actions: edit, publish/unpublish, hide in / show in th
 (feature `overview`); no unlink, a slideshow always belongs to its artist (only a slideshow that no longer exists can be unlinked). The actions save the slideshow right away
 (`Http\Controllers\Cp\SlideshowItemController`); the order is saved with the artist. The row is
 `reps-slideshow-item` in `resources/js/cp.js`, which extends Statamic's own relationship row.
+## Translations (multi-site)
+
+On a multi-site site (kombinatrotweiss) every language is edited in the default site's form; the
+"Working in" panel and the site dropdown of the globals are hidden, and the edit page of a
+localization opens its origin (feature `translatable_fields`, on by default, no effect on single-site
+sites). Built on `daun/statamic-multisite-field`:
+
+- every `localizable: true` field of the addon's blueprints (and of `<blueprint>_extra` fieldsets)
+  becomes a `reps_translatable` field: one input per language behind a "Language" switch (in the
+  sidebar, on global sets on top of each tab); untranslated values show the German text greyed out,
+- `title` and `slug` stay plain fields (Statamic needs them as strings), followed by
+  "Title (English)" / "Slug (English)" (`reps_site_value`; empty: like German).
+
+The data stays where Statamic keeps it: the German value on the origin, the English one on the
+localization (the fields stay `localizable`, the eloquent driver stores only those as a
+localization's own values). So templates, routing, SEO and `reps:import` / `reps:resync` are
+unchanged. `Translations\Listener` writes the other languages to the localizations when the origin
+is saved from the CP (an emptied field falls back to German); saves without these values (the
+import) pass untouched.
+
 ## Install in a site
 
 ```jsonc

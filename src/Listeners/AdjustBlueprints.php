@@ -3,6 +3,7 @@
 namespace Kraenkvisuell\StatamicReps\Listeners;
 
 use Kraenkvisuell\StatamicReps\Reps;
+use Kraenkvisuell\StatamicReps\Translations\Translations;
 use Statamic\Events\EntryBlueprintFound;
 use Statamic\Facades\Fieldset;
 
@@ -50,11 +51,46 @@ class AdjustBlueprints
         if ($extra = Fieldset::find("{$handle}_extra")) {
             $contents['tabs']['site'] = [
                 'display' => $extra->title(),
-                'sections' => [['fields' => [['import' => "{$handle}_extra"]]]],
+                // inlined when translating, so its localizable fields become translatable too
+                'sections' => [['fields' => Translations::enabled() ? $extra->contents()['fields'] ?? [] : [['import' => "{$handle}_extra"]]]],
             ];
         }
 
+        if (Translations::enabled()) {
+            $contents = static::translate($contents);
+        }
+
         $contents['reps_adjusted'] = true;
+
+        return $contents;
+    }
+
+    /**
+     * Multi-site: every language in the default site's form (see Translations\Translations). The
+     * language switcher goes into the sidebar, or (global sets have none) on top of every tab with
+     * translatable fields; all switchers share the selected language.
+     */
+    protected static function translate(array $contents): array
+    {
+        $translatedTabs = [];
+
+        foreach ($contents['tabs'] ?? [] as $tabHandle => $tab) {
+            foreach ($tab['sections'] ?? [] as $i => $section) {
+                $fields = Translations::fields($section['fields'] ?? []);
+
+                if (collect($fields)->contains(fn ($item) => in_array($item['field']['type'] ?? null, ['reps_translatable', 'reps_site_value'], true))) {
+                    $translatedTabs[$tabHandle] = true;
+                }
+
+                $contents['tabs'][$tabHandle]['sections'][$i]['fields'] = $fields;
+            }
+        }
+
+        $tabs = isset($contents['tabs']['sidebar']) && $translatedTabs ? ['sidebar'] : array_keys($translatedTabs);
+
+        foreach ($tabs as $tab) {
+            array_unshift($contents['tabs'][$tab]['sections'][0]['fields'], Translations::switcher($tab));
+        }
 
         return $contents;
     }

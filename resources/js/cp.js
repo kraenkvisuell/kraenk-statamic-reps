@@ -163,3 +163,30 @@ Statamic.booted(() => {
         },
     });
 });
+
+// Multi-site with translatable fields (Translations\Translations): every language is edited in the
+// default site's form, so the "Working in" panel of entries and the site dropdown of the globals
+// (switching to the other site's entry) are hidden.
+Statamic.booted(() => {
+    if (!Statamic.$config.get('repsTranslatableFields')) {
+        return;
+    }
+
+    const hide = () => {
+        document.querySelectorAll('[data-ui-panel-header]').forEach((header) => {
+            if (header.textContent.trim() === __('Working In')) {
+                header.closest('[data-ui-panel]').style.display = 'none';
+            }
+        });
+
+        // the site dropdown in the header of a global set
+        if (/\/globals\/[^/]+\/?$/.test(location.pathname)) {
+            document.querySelectorAll('[data-ui-header] [data-ui-combobox]').forEach((combobox) => {
+                combobox.parentElement.parentElement.style.display = 'none';
+            });
+        }
+    };
+
+    new MutationObserver(hide).observe(document.body, { childList: true, subtree: true });
+    hide();
+});

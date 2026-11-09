@@ -34,6 +34,9 @@ return [
         'overview_categories' => true,     // works flagged per category
         'represents_in_categories' => true, // works chosen to represent the artist in a category
         'captions' => false,
+        // multi-site: translatable fields show all languages in the default site's form (multisite
+        // fields); the other sites' entries only carry URL and values and aren't edited directly
+        'translatable_fields' => true,
         'work_translations' => false,      // English work texts on the row (title_en …; multi-site krw)
         'textboxes' => false,              // works that are text boxes (wfr)
         'work_bgcolor' => false,

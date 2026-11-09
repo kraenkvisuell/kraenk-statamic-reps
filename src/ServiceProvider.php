@@ -12,11 +12,16 @@ use Statamic\Contracts\Imaging\ImageManipulator;
 use Statamic\Contracts\Imaging\UrlBuilder;
 use Statamic\Events\EntryBlueprintFound;
 use Statamic\Events\EntrySaved;
+use Statamic\Events\EntrySaving;
+use Statamic\Events\GlobalVariablesBlueprintFound;
+use Statamic\Events\GlobalVariablesSaved;
+use Statamic\Events\GlobalVariablesSaving;
 use Statamic\Facades\Blink;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
 use Statamic\Providers\AddonServiceProvider;
+use Statamic\Statamic;
 
 class ServiceProvider extends AddonServiceProvider
 {
@@ -24,6 +29,8 @@ class ServiceProvider extends AddonServiceProvider
 
     // listing cells with HTML, copy buttons (plain JS, see the file)
     protected $scripts = [__DIR__.'/../resources/js/cp.js'];
+
+    protected $stylesheets = [__DIR__.'/../resources/css/cp.css'];
 
     protected $commands = [
         Commands\Install::class,
@@ -72,6 +79,13 @@ class ServiceProvider extends AddonServiceProvider
 
         Event::listen(EntryBlueprintFound::class, AdjustBlueprints::class);
         Event::listen(EntrySaved::class, SyncRelations::class);
+        Event::listen(EntrySaving::class, [Translations\Listener::class, 'entrySaving']);
+        Event::listen(GlobalVariablesSaving::class, [Translations\Listener::class, 'globalsSaving']);
+        Event::listen(GlobalVariablesSaved::class, [Translations\Listener::class, 'globalsSaved']);
+        // global blueprints have no parent; translatable fields need the variables to find the other sites
+        Event::listen(GlobalVariablesBlueprintFound::class, fn ($event) => $event->globals && $event->blueprint->setParent($event->globals));
+        $this->app['router']->pushMiddlewareToGroup('statamic.cp.authenticated', Http\Middleware\EditInDefaultSite::class);
+        Statamic::provideToScript(['repsTranslatableFields' => Translations\Translations::enabled()]);
 
         $this->app['router']->pushMiddlewareToGroup('statamic.web', Http\Middleware\RedirectOtherSiteSlugs::class);
     }
