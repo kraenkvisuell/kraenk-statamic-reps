@@ -25,8 +25,8 @@ tabs:
                       display: 'Image / video'
                       icon: media-image-picture-orientation
                       fields:
-                        - { import: 'reps::work_common' }
                         - { handle: file, field: { type: assets, display: File, container: main, max_files: 1 } }
+                        - { import: 'reps::work_common' }
                     embed:
                       display: Embed
                       icon: media-webcam-video

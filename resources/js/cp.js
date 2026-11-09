@@ -190,3 +190,61 @@ Statamic.booted(() => {
     new MutationObserver(hide).observe(document.body, { childList: true, subtree: true });
     hide();
 });
+
+// Work rows of a slideshow (the `works` replicator), like the old Nova list (see
+// Listeners\AdjustBlueprints::workRows): the collapsed row shows the file large (videos play),
+// then the title and a badge per flag or category that is set; the flags are on/off actions in the
+// row's menu. Statamic's own fieldtypes are extended only for fields marked in the blueprint.
+Statamic.booted(() => {
+    const app = Statamic.$app;
+    const escape = (text) => String(text ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+    const badge = (text) => `<span class="reps-badge inline-block rounded-sm border border-gray-300 px-1 text-2xs font-medium uppercase leading-normal text-gray-700 dark:border-gray-600 dark:text-gray-300">${escape(text)}</span>`;
+    const extend = (name, preview) => {
+        const Base = app.component(name);
+        if (!Base) return;
+        app.component(name, {
+            extends: Base,
+            computed: {
+                replicatorPreview() {
+                    const own = this.showFieldPreviews ? preview.call(this) : undefined;
+                    return own === undefined ? Base.computed.replicatorPreview.call(this) : own;
+                },
+            },
+        });
+    };
+
+    extend('assets-fieldtype', function () {
+        if (!this.config.reps_large_preview) return undefined;
+
+        return replicatorPreviewHtml(this.assets.map((asset) => {
+            const media = asset.extension?.toLowerCase() === 'mp4'
+                ? `<video src="${escape(asset.url)}" autoplay muted loop playsinline class="reps-work-media inline-block h-12 w-auto rounded-sm align-middle"></video>`
+                : (asset.isImage || asset.isSvg ? `<img src="${escape(asset.thumbnail)}" class="reps-work-media inline-block h-12 w-auto rounded-sm align-middle" alt="">` : '');
+            return media || escape(asset.basename);
+        }).join(' '));
+    });
+
+    extend('toggle-fieldtype', function () {
+        if (!this.config.reps_flag) return undefined;
+        // reps_flag may hold a shorter label for the badge
+        const label = typeof this.config.reps_flag === 'string' ? this.config.reps_flag : this.config.display;
+        return this.value ? replicatorPreviewHtml(badge(__(label))) : null;
+    });
+
+    extend('relationship-fieldtype', function () {
+        if (!this.config.reps_flag) return undefined;
+        const titles = (this.meta?.data || []).filter((item) => (this.value || []).includes(item.id)).map((item) => item.title);
+        const label = typeof this.config.reps_flag === 'string' ? this.config.reps_flag : this.config.display;
+        return titles.length ? replicatorPreviewHtml(badge(`${__(label)}: ${titles.join(', ')}`)) : null;
+    });
+
+    // "Portfolio image" on/off … in the row menu, for the flags the row has
+    Object.entries(Statamic.$config.get('repsWorkFlags') || {}).forEach(([handle, label]) => {
+        Statamic.$fieldActions.add('replicator-fieldtype-set', {
+            title: __(label),
+            icon: ({ values }) => (values?.[handle] ? 'checkbox' : 'checkbox-uncheck'),
+            visible: ({ config }) => (config?.fields || []).some((field) => field.handle === handle && field.reps_flag),
+            run: ({ values, update }) => update(handle, !values?.[handle]),
+        });
+    });
+});

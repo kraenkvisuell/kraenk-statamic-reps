@@ -85,7 +85,16 @@ class ServiceProvider extends AddonServiceProvider
         // global blueprints have no parent; translatable fields need the variables to find the other sites
         Event::listen(GlobalVariablesBlueprintFound::class, fn ($event) => $event->globals && $event->blueprint->setParent($event->globals));
         $this->app['router']->pushMiddlewareToGroup('statamic.cp.authenticated', Http\Middleware\EditInDefaultSite::class);
-        Statamic::provideToScript(['repsTranslatableFields' => Translations\Translations::enabled()]);
+        Statamic::provideToScript([
+            'repsTranslatableFields' => Translations\Translations::enabled(),
+            // labels of the work flags for the actions of a work row (resources/js/cp.js)
+            'repsWorkFlags' => [
+                'show_in_overview' => 'Show in overview',
+                'is_portfolio_image' => Reps::label('portfolio_image'),
+                'is_startpage_image' => Reps::label('startpage_image'),
+                'is_discipline_image' => 'Discipline image',
+            ],
+        ]);
 
         $this->app['router']->pushMiddlewareToGroup('statamic.web', Http\Middleware\RedirectOtherSiteSlugs::class);
     }

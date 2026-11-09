@@ -130,6 +130,40 @@ class AdjustBlueprints
         return $result;
     }
 
+    /** On/off flags of a work: badges in the row header and actions in its menu (resources/js/cp.js). */
+    public const WORK_FLAGS = ['show_in_overview', 'is_portfolio_image', 'is_startpage_image', 'is_discipline_image'];
+
+    /**
+     * The collapsed work rows show what the old Nova list showed: the file (large preview), the
+     * title and the flags and categories that are set (`reps_flag`); the other fields stay out of
+     * the row header.
+     */
+    protected static function workRows(array $field): array
+    {
+        foreach ($field['sets'] ?? [] as $groupHandle => $group) {
+            foreach ($group['sets'] ?? [] as $setHandle => $set) {
+                foreach ($set['fields'] ?? [] as $i => $item) {
+                    $config = &$field['sets'][$groupHandle]['sets'][$setHandle]['fields'][$i]['field'];
+
+                    match (true) {
+                        ! isset($item['handle'], $item['field']) => null,
+                        $item['handle'] === 'file' => $config['reps_large_preview'] = true,
+                        $item['handle'] === 'show_in_overview' => $config['reps_flag'] = 'In overview',
+                        $item['handle'] === 'overview_categories' => $config['reps_flag'] = 'In overview',
+                        $item['handle'] === 'represents_in' => $config['reps_flag'] = 'Category page',
+                        in_array($item['handle'], [...static::WORK_FLAGS, 'overview_categories', 'represents_in'], true) => $config['reps_flag'] = true,
+                        $item['handle'] !== 'title' => $config['replicator_preview'] = false,
+                        default => null,
+                    };
+
+                    unset($config);
+                }
+            }
+        }
+
+        return $field;
+    }
+
     protected static function enabled(array $field): bool
     {
         return ! isset($field['reps_feature']) || Reps::feature($field['reps_feature']);
@@ -159,6 +193,10 @@ class AdjustBlueprints
 
                 $field['sets'][$groupHandle]['sets'][$setHandle]['fields'] = static::fields($set['fields'] ?? []);
             }
+        }
+
+        if ($handle === 'works') {
+            $field = static::workRows($field);
         }
 
         if (in_array($handle, ['slideshows', 'works', 'categories', 'disciplines'], true) && isset($field['display'])) {

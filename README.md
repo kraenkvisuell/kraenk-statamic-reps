@@ -18,6 +18,17 @@ slideshow in a stack) and actions: edit, publish/unpublish, hide in / show in th
 (feature `overview`); no unlink, a slideshow always belongs to its artist (only a slideshow that no longer exists can be unlinked). The actions save the slideshow right away
 (`Http\Controllers\Cp\SlideshowItemController`); the order is saved with the artist. The row is
 `reps-slideshow-item` in `resources/js/cp.js`, which extends Statamic's own relationship row.
+## Works of a slideshow
+
+The collapsed work rows show what the old Nova list showed: the file as a large preview (videos
+play), the title and a badge per flag or category that is set ("Übersicht", "Portfolio-Bild",
+"Übersicht: Portrait", "Kategorieseite: Portrait"). The flags are on/off actions directly in the
+row's menu (checkbox icon = current state); like every change in the form they're saved with the
+slideshow. `Listeners\AdjustBlueprints::workRows` marks the fields (`reps_large_preview`,
+`reps_flag`, `replicator_preview: false` for the rest); `resources/js/cp.js` extends Statamic's
+assets, toggle and entries fieldtypes only for marked fields and registers the actions as
+`replicator-fieldtype-set` field actions.
+
 ## Translations (multi-site)
 
 On a multi-site site (kombinatrotweiss) every language is edited in the default site's form; the
