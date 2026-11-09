@@ -31,10 +31,10 @@ class ArtistListing
 
     public static function name(Entry $artist): string
     {
-        $html = '<a href="'.e($artist->editUrl()).'" class="title-index-field">'.e((string) $artist->get('title')).'</a>'
+        $html = '<a href="'.e($artist->editUrl()).'" class="title-index-field">'.e((string) $artist->value('title')).'</a>'
             .'<div class="text-xs text-gray-500">/'.e((string) $artist->slug()).'</div>';
 
-        if (Reps::feature('external_artists') && $artist->get('is_external')) {
+        if (Reps::feature('external_artists') && $artist->value('is_external')) {
             $html .= '<div class="text-xs text-gray-500">('.e(__('External (no portfolio page)')).')</div>';
         }
 
@@ -58,7 +58,7 @@ class ArtistListing
     {
         $limit = (int) Reps::config('cp.artist_portfolio_images', 3);
 
-        return collect((array) $artist->get('portfolio_image'))
+        return collect((array) $artist->value('portfolio_image'))
             ->merge(static::flaggedFiles($artist, 'is_portfolio_image', $limit))
             ->filter()
             ->unique()
