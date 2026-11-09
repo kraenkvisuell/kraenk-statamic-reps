@@ -10,8 +10,9 @@ here – only content model, import/re-sync, SEO, lightbox, queries, storage.
 
 - Every behaviour a site can change is a key in `config/kraenk-statamic-reps.php` with a default.
   Don't read `env()` outside that config file (config caching).
-- The sites require the addon through a symlinked path repository while developing; run their tests
-  after changing it (`php artisan test` in each site) – a change here changes all four.
+- The sites require tagged releases (`^0.1`) from the private GitHub repo; releasing is in README.md
+  ("Releases"). To test a change before tagging, point a site at `../kraenk-statamic-reps` as a path
+  repository locally (don't commit that) and run its tests – a change here changes all four.
 - The import must stay idempotent: a second `reps:import --dry-run` reports nothing. Compare values
   with `Writer::same()` (Postgres jsonb reorders object keys), keep row ids deterministic
   (`Content::rowId`), never generate random ids for imported data.

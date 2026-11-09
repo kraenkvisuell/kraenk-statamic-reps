@@ -17,9 +17,17 @@ associative arrays merge recursively, lists replace).
 }
 ```
 
-`composer require kraenkvisuell/kraenk-statamic-reps` (needs GitHub access to the private repo, e.g.
+`composer require kraenkvisuell/kraenk-statamic-reps:^0.1` (needs GitHub access to the private repo, e.g.
 `composer config --global github-oauth.github.com <token>` / Forge's GitHub integration). For working
-on the addon next to a site, use a path repository (`../kraenk-statamic-reps`, symlinked) instead.
+on the addon next to a site, point it at a path repository (`../kraenk-statamic-reps`, symlinked) locally
+without committing that.
+
+## Releases
+
+Versions are git tags (`v0.1.0`, …). Under 1.0 a minor bump (`v0.2.0`) means sites need changes, a
+patch (`v0.1.1`) is a fix. Release: commit, run the sites' tests against the change, `git tag -a v0.x.y
+-m v0.x.y && git push --follow-tags`; then per site `composer update kraenkvisuell/kraenk-statamic-reps`
+(widen the constraint for a minor bump), test, commit `composer.lock`.
 
 Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the site's options,
 `php artisan reps:install` (writes collections, globals, navigations, the asset container),
