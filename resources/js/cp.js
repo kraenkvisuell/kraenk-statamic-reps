@@ -10,25 +10,24 @@ Statamic.booting(() => {
     });
 });
 
-// "Copy Link" buttons in listings: <button data-reps-copy="a:123">
-document.addEventListener(
-    'click',
-    (event) => {
-        const button = event.target.closest('[data-reps-copy]');
-
-        if (!button) {
-            return;
-        }
-
-        event.preventDefault();
-        event.stopPropagation();
-
-        navigator.clipboard.writeText(button.dataset.repsCopy).then(() => {
-            Statamic.$toast?.success(__('Copied to clipboard') + ': ' + button.dataset.repsCopy);
-        });
-    },
-    true,
-);
+// "Copy Link" buttons of the artist list (Fieldtypes\CopyLinks): [{ label, text }]
+Statamic.booting(() => {
+    Statamic.$components.register('reps_copy_links-fieldtype-index', {
+        props: ['value', 'values', 'handle'],
+        render() {
+            return Vue.h('div', { class: 'flex flex-col items-start gap-1' }, (this.value || []).map((link) =>
+                Vue.h(Vue.resolveComponent('ui-button'), {
+                    size: 'xs',
+                    variant: 'primary',
+                    text: link.label,
+                    onClick: (event) => {
+                        event.stopPropagation();
+                        navigator.clipboard.writeText(link.text).then(() => Statamic.$toast.success(__('Copied to clipboard') + ': ' + link.text));
+                    },
+                })));
+        },
+    });
+});
 
 // Rows of the artist's slideshows field (Fieldtypes\Slideshows), like the old Nova list: position
 // dropdown, title with categories, the works' thumbnails, number of works, actions (no unlink: a
@@ -134,8 +133,8 @@ Statamic.booted(() => {
             });
 
             const position = this.sortable && this.values.length > 1
-                ? h('div', { class: 'shrink-0', style: 'width:4.5rem' }, ui('select', {
-                    size: 'sm',
+                ? h('div', { class: 'shrink-0', style: 'width:4rem' }, ui('select', {
+                    size: 'xs',
                     modelValue: this.position,
                     options: this.values.map((id, i) => ({ label: String(i + 1), value: i })),
                     'aria-label': __('Position'),

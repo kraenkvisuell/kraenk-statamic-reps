@@ -7,7 +7,7 @@ tabs:
         fields:
           # columns of the CP list only (computed in Cp\ArtistListing, never shown in the form)
           - { handle: reps_name, field: { type: reps_html, display: Name, visibility: computed, listable: true, if: { title: 'equals __listing_only__' } } }
-          - { handle: reps_copy_links, field: { type: reps_html, display: Links, visibility: computed, listable: true, reps_feature: artist_copy_links, if: { title: 'equals __listing_only__' } } }
+          - { handle: reps_copy_links, field: { type: reps_copy_links, display: Links, visibility: computed, listable: true, reps_feature: artist_copy_links, if: { title: 'equals __listing_only__' } } }
           - { handle: reps_portfolio_images, field: { type: assets, display: 'Portfolio images', container: main, visibility: computed, listable: true, reps_feature: portfolio_images, if: { title: 'equals __listing_only__' } } }
           - { handle: reps_startpage_images, field: { type: assets, display: 'Start page images', container: main, visibility: computed, listable: true, reps_feature: startpage_images, if: { title: 'equals __listing_only__' } } }
           - handle: slideshows

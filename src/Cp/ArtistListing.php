@@ -42,15 +42,14 @@ class ArtistListing
     }
 
     /** The old buttons copied a:<id> / b:<id> with the Nova id; new artists use their entry id. */
-    public static function copyLinks(Entry $artist): string
+    public static function copyLinks(Entry $artist): array
     {
         $id = $artist->root()->get('legacy_id') ?: $artist->root()->id();
 
-        return collect(['a' => 'Copy Link', 'b' => 'Copy Link 2'])
-            ->map(fn ($label, $prefix) => '<button type="button" data-reps-copy="'.e("$prefix:$id").'"'
-                .' style="display:block;margin:2px 0;padding:2px 8px;border-radius:4px;font-size:12px;white-space:nowrap;background:#2563eb;color:#fff">'
-                .e($label).'</button>')
-            ->implode('');
+        return [
+            ['label' => 'Copy Link', 'text' => "a:$id"],
+            ['label' => 'Copy Link 2', 'text' => "b:$id"],
+        ];
     }
 
     /** Paths of the artist's own portfolio image first, then of the works flagged as portfolio images. */
