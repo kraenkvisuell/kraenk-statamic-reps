@@ -23,6 +23,7 @@ tabs:
               create: true
               mode: default
               localizable: false
+              listable: false
           - { handle: disciplines, field: { type: entries, display: Disciplines, collections: [disciplines], mode: select, localizable: false, listable: true } }
           - { handle: categories, field: { type: entries, display: Categories, instructions: 'Filled from the slideshows. Order them to change the order on the artist page.', collections: [categories], mode: select, reps_feature: artist_categories_order, localizable: false } }
   details:

@@ -5,7 +5,6 @@ namespace Kraenkvisuell\StatamicReps\Cp;
 use Kraenkvisuell\StatamicReps\Portfolio;
 use Kraenkvisuell\StatamicReps\Reps;
 use Statamic\Contracts\Entries\Entry;
-use Statamic\Facades\Asset;
 use Statamic\Facades\Collection;
 use Statamic\Statamic;
 
@@ -21,8 +20,8 @@ class ArtistListing
         $columns = [
             'reps_name' => fn (Entry $artist) => static::name($artist),
             'reps_copy_links' => fn (Entry $artist) => static::copyLinks($artist),
-            'reps_portfolio_images' => fn (Entry $artist) => static::paths(static::portfolioImages($artist)),
-            'reps_startpage_images' => fn (Entry $artist) => static::paths(Portfolio::flagged($artist, 'is_startpage_image')->pluck('asset')->all()),
+            'reps_portfolio_images' => fn (Entry $artist) => static::portfolioImages($artist),
+            'reps_startpage_images' => fn (Entry $artist) => static::flaggedFiles($artist, 'is_startpage_image'),
         ];
 
         foreach ($columns as $handle => $callback) {
@@ -54,28 +53,34 @@ class ArtistListing
             ->implode('');
     }
 
-    /** The artist's own portfolio image first, then the works flagged as portfolio images. */
+    /** Paths of the artist's own portfolio image first, then of the works flagged as portfolio images. */
     public static function portfolioImages(Entry $artist): array
     {
         $limit = (int) Reps::config('cp.artist_portfolio_images', 3);
-        $own = collect((array) $artist->get('portfolio_image'))->filter()->map(fn ($path) => static::asset($path));
 
-        return $own->merge(Portfolio::flagged($artist, 'is_portfolio_image')->pluck('asset'))
+        return collect((array) $artist->get('portfolio_image'))
+            ->merge(static::flaggedFiles($artist, 'is_portfolio_image', $limit))
             ->filter()
-            ->unique(fn ($asset) => $asset->id())
+            ->unique()
             ->take($limit)
             ->values()
             ->all();
     }
 
-    protected static function asset(string $path)
+    /**
+     * Files of the artist's works with a flag, in slideshow order. Reads the raw work rows instead
+     * of Portfolio::flagged(), which builds a full item (asset, url, ratio) for every work: with
+     * ~10,000 works that took 14 s for one listing page.
+     */
+    public static function flaggedFiles(Entry $artist, string $flag, ?int $limit = null): array
     {
-        return Asset::find(Reps::config('assets.container').'::'.$path);
-    }
+        $files = Portfolio::slideshows($artist)
+            ->flatMap(fn ($slideshow) => $slideshow->root()->get('works', []))
+            ->filter(fn ($work) => ($work['enabled'] ?? true) && ! empty($work[$flag]) && ! empty($work['file']))
+            ->pluck('file')
+            ->unique()
+            ->values();
 
-    /** Asset paths for the assets fieldtype's listing thumbnails. */
-    protected static function paths(array $assets): array
-    {
-        return collect($assets)->filter()->map(fn ($asset) => $asset->path())->values()->all();
+        return ($limit ? $files->take($limit) : $files)->all();
     }
 }
