@@ -32,7 +32,8 @@ document.addEventListener(
 
 // Rows of the artist's slideshows field (Fieldtypes\Slideshows), like the old Nova list: position
 // dropdown, title with categories, the works' thumbnails, number of works, actions (no unlink: a
-// slideshow always belongs to its artist). Extends Statamic's own row (inline edit stack); `$parent` is the relationship input.
+// slideshow always belongs to its artist). Built from Statamic's UI components (ui.statamic.dev);
+// extends Statamic's own row (inline edit stack). `$parent` is the relationship input.
 Statamic.booted(() => {
     const Base = Statamic.$app.component('relationship-input')?.components?.RelatedItem;
 
@@ -43,7 +44,6 @@ Statamic.booted(() => {
     const { Dropdown, DropdownMenu, DropdownItem, Button, InlineEditForm } = Base.components;
     const h = Vue.h;
     const url = (path) => Statamic.$config.get('cpUrl').replace(/\/$/, '') + '/reps/slideshows/' + path;
-    const strike = (text) => h('div', { class: 'text-2xs font-bold uppercase text-gray-500', style: 'text-decoration:line-through' }, text);
 
     Statamic.$app.component('reps-slideshow-item', {
         extends: Base,
@@ -89,32 +89,35 @@ Statamic.booted(() => {
             const item = this.item;
             const reps = this.reps;
             const valid = !item.invalid;
+            const ui = (name, props, slots) => h(Vue.resolveComponent('ui-' + name), props, slots);
 
             const title = valid && this.editable
                 ? h('a', { href: item.edit_url, class: 'font-medium text-gray-800 dark:text-gray-200', onClick: (e) => { e.preventDefault(); this.edit(); } }, item.title)
                 : h('div', { class: 'font-medium' }, valid ? item.title : __('messages.relationship_item_unavailable'));
 
-            const details = h('div', { style: 'flex:1 1 14rem;min-width:10rem' }, [
+            const badges = [
+                ...(reps.categories || []).map((category) => ui('badge', { size: 'sm', text: category })),
+                valid && reps.published === false ? ui('badge', { size: 'sm', color: 'red', text: __('Draft') }) : null,
+                reps.visible_in_overview === false ? ui('badge', { size: 'sm', color: 'red', text: __('Hidden in the artist overview') }) : null,
+            ].filter(Boolean);
+
+            const details = h('div', { class: 'flex flex-col gap-1.5', style: 'flex:1 1 14rem;min-width:10rem' }, [
                 title,
-                reps.categories?.length
-                    ? h('div', { style: 'margin-top:4px' }, reps.categories.map((category) =>
-                        h('span', { class: 'text-gray-500 dark:text-gray-400', style: 'display:inline-block;margin:0 4px 4px 0;padding:1px 4px;border:1px solid currentColor;font-size:10px;line-height:1.3;text-transform:uppercase' }, category)))
-                    : null,
-                valid && reps.published === false ? strike(__('Published')) : null,
-                reps.visible_in_overview === false ? strike(__(reps.overview_label)) : null,
+                badges.length ? h('div', { class: 'flex flex-wrap gap-1' }, badges) : null,
             ]);
 
-            const thumbnails = h('div', { style: 'flex:2 1 16rem;display:flex;flex-wrap:wrap;gap:4px' }, (reps.thumbnails || []).map((thumbnail) =>
+            const thumbnails = h('div', { class: 'flex flex-wrap gap-1', style: 'flex:2 1 16rem' }, (reps.thumbnails || []).map((thumbnail) =>
                 thumbnail.video
-                    ? h('video', { src: thumbnail.video, autoplay: true, muted: true, loop: true, playsinline: true, style: 'height:48px;width:auto' })
-                    : h('img', { src: thumbnail.image, loading: 'lazy', style: 'height:48px;width:auto' })));
+                    ? h('video', { src: thumbnail.video, autoplay: true, muted: true, loop: true, playsinline: true, class: 'h-12 w-auto rounded-sm' })
+                    : h('img', { src: thumbnail.image, loading: 'lazy', class: 'h-12 w-auto rounded-sm' })));
 
             const works = valid
-                ? h('button', {
-                    type: 'button',
+                ? ui('button', {
+                    size: 'xs',
+                    variant: reps.works ? 'primary' : 'danger',
+                    text: `${reps.works ?? 0} ${__(reps.works_label ?? '')}`,
                     onClick: () => this.edit(),
-                    style: `white-space:nowrap;padding:2px 8px;border-radius:4px;font-size:12px;color:#fff;background:${reps.works ? '#2563eb' : '#dc2626'}`,
-                }, `${reps.works ?? 0} ${__(reps.works_label ?? '')}`)
+                })
                 : null;
 
             const actions = this.readOnly ? null : h(Dropdown, null, {
@@ -131,22 +134,22 @@ Statamic.booted(() => {
             });
 
             const position = this.sortable && this.values.length > 1
-                ? h('select', {
-                    value: this.position,
-                    onChange: (e) => this.moveTo(Number(e.target.value)),
+                ? h('div', { class: 'shrink-0', style: 'width:4.5rem' }, ui('select', {
+                    size: 'sm',
+                    modelValue: this.position,
+                    options: this.values.map((id, i) => ({ label: String(i + 1), value: i })),
                     'aria-label': __('Position'),
-                    class: 'border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900',
-                    style: 'border-radius:4px;padding:2px 4px;font-size:13px',
-                }, this.values.map((id, i) => h('option', { value: i, selected: i === this.position }, i + 1)))
+                    'onUpdate:modelValue': (index) => this.moveTo(index),
+                }))
                 : null;
 
             return h('div', {
                 class: 'shadow-ui-sm relative flex w-full items-start gap-3 rounded-lg border border-gray-300 bg-white px-3 py-2 mb-1.5 last:mb-0 text-sm dark:border-gray-700 dark:bg-gray-900' + (item.invalid ? ' invalid' : ''),
             }, [
-                this.sortable ? h(Vue.resolveComponent('ui-icon'), { name: 'handles', class: 'item-move sortable-handle size-4 cursor-grab text-gray-300 dark:text-gray-700', style: 'margin-top:4px' }) : null,
+                this.sortable ? ui('icon', { name: 'handles', class: 'item-move sortable-handle mt-2 size-4 cursor-grab text-gray-300 dark:text-gray-700' }) : null,
                 position,
-                item.status ? h(Vue.resolveComponent('ui-status-indicator'), { status: item.status, style: 'margin-top:6px' }) : null,
-                h('div', { style: 'flex:1;display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px' }, [details, thumbnails]),
+                item.status ? ui('status-indicator', { status: item.status, class: 'mt-2.5' }) : null,
+                h('div', { class: 'flex flex-1 flex-wrap items-start gap-3' }, [details, thumbnails]),
                 works,
                 actions,
                 this.isEditing ? h(InlineEditForm, {
