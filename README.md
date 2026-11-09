@@ -21,8 +21,8 @@ slideshow in a stack) and actions: edit, publish/unpublish, hide in / show in th
 ## Works of a slideshow
 
 The collapsed work rows show what the old Nova list showed: the file as a large preview (videos
-play), the title and a badge per flag or category that is set ("Übersicht", "Portfolio-Bild",
-"Übersicht: Portrait", "Kategorieseite: Portrait"). The on/off flags (show in overview, portfolio
+play), a badge per flag or category that is set ("Übersicht", "Portfolio-Bild",
+"Übersicht: Portrait", "Kategorieseite: Portrait"), then the title. The on/off flags (show in overview, portfolio
 image, start page image, discipline image – whichever the site uses) are switches (one per line,
 label to the right) on top of the
 expanded row, saved with the slideshow. `Listeners\AdjustBlueprints::workRows` moves and marks the

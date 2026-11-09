@@ -13,13 +13,16 @@
     margin-bottom: -1lh;
 }
 
-/* Work rows of a slideshow (resources/js/cp.js): the collapsed row's preview with the large file
-   preview and the flag badges may wrap instead of cutting the badges off. */
+/* Work rows of a slideshow (resources/js/cp.js): the collapsed row's preview shows the file large,
+   then the badges, then the title (the order of the fields differs: the switches come first), and
+   may wrap instead of cutting badges off. */
 [data-replicator-set] header [data-ui-subheading]:has(.reps-work-media, .reps-badge) {
-    display: block;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
     white-space: normal;
     text-align: start;
-    line-height: 1.9;
 }
 
 [data-replicator-set] header [data-ui-subheading]:has(.reps-work-media, .reps-badge) > span:not(.reps-badge) {
@@ -27,9 +30,9 @@
 }
 
 .reps-work-media {
-    margin-inline-end: 0.5rem;
+    order: -2;
 }
 
 .reps-badge {
-    margin-inline-start: 0.375rem;
+    order: -1;
 }
