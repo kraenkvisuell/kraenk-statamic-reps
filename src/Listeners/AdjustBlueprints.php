@@ -159,9 +159,15 @@ class AdjustBlueprints
                     unset($config);
                 }
 
-                // the on/off flags as switches on top of the expanded row
+                // the on/off flags as switches on top of the expanded row, one per line, label to the right
                 $fields = $field['sets'][$groupHandle]['sets'][$setHandle]['fields'] ?? [];
                 $isFlag = fn ($item) => in_array($item['handle'] ?? null, static::WORK_FLAGS, true);
+                foreach ($fields as $i => $item) {
+                    if ($isFlag($item)) {
+                        $fields[$i]['field'] = ['width' => 100, 'hide_display' => true, 'inline_label' => $item['field']['display'] ?? null] + $fields[$i]['field'];
+                        $fields[$i]['field']['width'] = 100;
+                    }
+                }
                 $field['sets'][$groupHandle]['sets'][$setHandle]['fields'] = [
                     ...array_values(array_filter($fields, $isFlag)),
                     ...array_values(array_filter($fields, fn ($item) => ! $isFlag($item))),

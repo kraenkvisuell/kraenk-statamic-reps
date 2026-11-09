@@ -23,7 +23,8 @@ slideshow in a stack) and actions: edit, publish/unpublish, hide in / show in th
 The collapsed work rows show what the old Nova list showed: the file as a large preview (videos
 play), the title and a badge per flag or category that is set ("Übersicht", "Portfolio-Bild",
 "Übersicht: Portrait", "Kategorieseite: Portrait"). The on/off flags (show in overview, portfolio
-image, start page image, discipline image – whichever the site uses) are switches on top of the
+image, start page image, discipline image – whichever the site uses) are switches (one per line,
+label to the right) on top of the
 expanded row, saved with the slideshow. `Listeners\AdjustBlueprints::workRows` moves and marks the
 fields (`reps_large_preview`, `reps_flag`, `replicator_preview: false` for the rest);
 `resources/js/cp.js` extends Statamic's assets, toggle and entries fieldtypes only for marked fields.
