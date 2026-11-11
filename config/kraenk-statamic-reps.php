@@ -37,6 +37,9 @@ return [
         // multi-site: translatable fields show all languages in the default site's form (multisite
         // fields); the other sites' entries only carry URL and values and aren't edited directly
         'translatable_fields' => true,
+        // single site with bastihilger/simple-statamic-translations: localizable fields become
+        // translated fields (Translations\SimpleTranslations); trial on kombinatrotweiss
+        'simple_translations' => false,
         'work_translations' => false,      // English work texts on the row (title_en …; multi-site krw)
         'textboxes' => false,              // works that are text boxes (wfr)
         'work_bgcolor' => false,

@@ -4,6 +4,7 @@ namespace Kraenkvisuell\StatamicReps\Import;
 
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Kraenkvisuell\StatamicReps\Translations\SimpleTranslations;
 use Ramsey\Uuid\Uuid;
 use Statamic\Facades\Collection as Collections;
 use Statamic\Facades\Entry;
@@ -88,6 +89,12 @@ class Writer
 
         if ($isNew) {
             $entry = Entry::make()->collection($collection)->locale($default)->id($this->id($collection, $legacyId));
+        }
+
+        // one site, every language in the entry: the other languages go into its translated fields
+        if (SimpleTranslations::enabled()) {
+            $data = SimpleTranslations::merge($entry->blueprint(), $data, $localized, array_diff_key($slugs, [$default => true]), $slugs[$default] ?? null);
+            $localized = [];
         }
 
         $changes = $this->apply($entry, ['legacy_id' => $legacyId] + $data);

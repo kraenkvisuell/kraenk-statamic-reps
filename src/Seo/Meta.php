@@ -4,6 +4,7 @@ namespace Kraenkvisuell\StatamicReps\Seo;
 
 use Illuminate\Support\Collection;
 use Kraenkvisuell\StatamicReps\Reps;
+use Kraenkvisuell\StatamicReps\Translations\SimpleTranslations;
 use Statamic\Contracts\Assets\Asset;
 use Statamic\Contracts\Entries\Entry;
 use Statamic\Facades\Asset as Assets;
@@ -25,15 +26,17 @@ class Meta
         $site = Site::current();
         $settings = GlobalSet::findByHandle('site_settings')?->in($site->handle());
         $seo = GlobalSet::findByHandle('seo')?->in($site->handle());
-        $siteName = (string) ($settings?->get('website_title') ?: $site->name());
+        // translated fields: the current language's value (SimpleTranslations; otherwise as stored)
+        $read = fn ($item, string $key) => SimpleTranslations::read($item, $key);
+        $siteName = (string) ($read($settings, 'website_title') ?: $site->name());
         $get = fn (string $key) => $this->entry
-            ? $this->entry->value($key)
-            : $seo?->get(($this->index ?? 'home').'_'.$key);
-        $home = $seo ? fn (string $key) => $seo->get("home_$key") : fn () => null;
+            ? $read($this->entry, $key)
+            : $read($seo, ($this->index ?? 'home').'_'.$key);
+        $home = $seo ? fn (string $key) => $read($seo, "home_$key") : fn () => null;
 
         $indexLabel = $this->index ? Reps::config("seo.index_pages.{$this->index}") : null;
         $indexLabel = is_array($indexLabel) ? ($indexLabel[0] ?? null) : $indexLabel;
-        $pageTitle = $get('browser_title') ?: ($this->entry?->value('title') ?? $this->title ?? $indexLabel);
+        $pageTitle = $get('browser_title') ?: ($read($this->entry, 'title') ?? $this->title ?? $indexLabel);
         $isHome = ! $this->entry && ! $this->index && ! $this->title;
         $pageTitle = $pageTitle instanceof Value ? (string) $pageTitle->value() : $pageTitle;
 
@@ -61,7 +64,7 @@ class Meta
             'canonical' => Reps::config('seo.canonical') ? $this->url : null,
             'alternates' => Reps::config('seo.hreflang') ? $this->alternates() : [],
             'site_name' => $siteName,
-            'locale' => $site->locale(),
+            'locale' => SimpleTranslations::enabled() ? SimpleTranslations::locale() : $site->locale(),
         ];
     }
 
@@ -143,6 +146,10 @@ class Meta
     /** @return list<array{hreflang: string, url: string}> */
     protected function alternates(): array
     {
+        if (SimpleTranslations::enabled()) {
+            return collect(SimpleTranslations::urls($this->entry))->map(fn ($url, $code) => ['hreflang' => $code, 'url' => $url])->values()->all();
+        }
+
         if (Site::all()->count() < 2) {
             return [];
         }
