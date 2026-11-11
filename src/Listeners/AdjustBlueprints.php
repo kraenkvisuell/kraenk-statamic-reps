@@ -2,7 +2,9 @@
 
 namespace Kraenkvisuell\StatamicReps\Listeners;
 
+use Bastihilger\SimpleStatamicTranslations\Listeners\AdjustBlueprint;
 use Kraenkvisuell\StatamicReps\Reps;
+use Kraenkvisuell\StatamicReps\Translations\SimpleTranslations;
 use Kraenkvisuell\StatamicReps\Translations\Translations;
 use Statamic\Events\EntryBlueprintFound;
 use Statamic\Facades\Fieldset;
@@ -24,6 +26,12 @@ class AdjustBlueprints
         }
 
         $blueprint->setContents(static::adjust($blueprint->contents(), $blueprint->handle()));
+
+        // the translated fields exist only now; simple-statamic-translations' own listener may
+        // have run before this one (language switch, title/slug in the current language)
+        if (SimpleTranslations::enabled()) {
+            app(AdjustBlueprint::class)->handle($event);
+        }
     }
 
     public static function adjust(array $contents, string $handle): array
@@ -52,12 +60,18 @@ class AdjustBlueprints
             $contents['tabs']['site'] = [
                 'display' => $extra->title(),
                 // inlined when translating, so its localizable fields become translatable too
-                'sections' => [['fields' => Translations::enabled() ? $extra->contents()['fields'] ?? [] : [['import' => "{$handle}_extra"]]]],
+                'sections' => [['fields' => Translations::enabled() || SimpleTranslations::enabled() ? $extra->contents()['fields'] ?? [] : [['import' => "{$handle}_extra"]]]],
             ];
         }
 
         if (Translations::enabled()) {
             $contents = static::translate($contents);
+        } elseif (SimpleTranslations::enabled()) {
+            foreach ($contents['tabs'] ?? [] as $tabHandle => $tab) {
+                foreach ($tab['sections'] ?? [] as $i => $section) {
+                    $contents['tabs'][$tabHandle]['sections'][$i]['fields'] = SimpleTranslations::fields($section['fields'] ?? []);
+                }
+            }
         }
 
         $contents['reps_adjusted'] = true;
