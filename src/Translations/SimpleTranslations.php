@@ -3,6 +3,7 @@
 namespace Kraenkvisuell\StatamicReps\Translations;
 
 use Bastihilger\SimpleStatamicTranslations\Translations as Languages;
+use Kraenkvisuell\StatamicReps\Import\Writer;
 use Kraenkvisuell\StatamicReps\Reps;
 use Statamic\Facades\Site;
 use Statamic\Structures\Page;
@@ -122,6 +123,66 @@ class SimpleTranslations
 
             return [$code => url(implode('/', $path))];
         })->all();
+    }
+
+    /**
+     * Import (reps:import / reps:resync): the default language's values plus the other languages'
+     * as translated fields – `{de: {h: …}, en: {h: …}}`, other languages only where they differ –
+     * and the Translation fields of title/slug. Fields the import doesn't provide stay untouched.
+     *
+     * @param  array  $data  the default language's values (and the untranslated ones)
+     * @param  array<string, array>  $others  language => values of the other languages
+     * @param  array<string, string|null>  $slugs  language => slug of the other languages
+     */
+    public static function merge($blueprint, array $data, array $others, array $slugs = [], ?string $slug = null): array
+    {
+        $default = Languages::default();
+
+        foreach ($blueprint?->fields()->all() ?? [] as $handle => $field) {
+            if ($field->type() === 'translation') {
+                $target = $field->get('field', 'title');
+                $provided = $target === 'slug' ? $slugs !== [] : collect($others)->contains(fn ($values) => array_key_exists($target, $values));
+
+                if (! $provided) {
+                    continue;
+                }
+
+                $base = $target === 'slug' ? $slug : ($data[$target] ?? null);
+                $translations = [];
+
+                foreach (array_keys($others + $slugs) as $language) {
+                    $values = $others[$language] ?? [];
+                    $text = $target === 'slug' ? ($slugs[$language] ?? null) : ($values[$target] ?? null);
+
+                    if (filled($text) && $text !== $base) {
+                        $translations[$language] = $text;
+                    }
+                }
+
+                $data[$handle] = $translations ?: null;
+
+                continue;
+            }
+
+            if ($field->type() !== 'translated' || ! (array_key_exists($handle, $data) || collect($others)->contains(fn ($values) => array_key_exists($handle, $values)))) {
+                continue;
+            }
+
+            $own = $data[$handle] ?? null;
+            $translated = blank($own) ? [] : [$default => [$handle => $own]];
+
+            foreach ($others as $language => $values) {
+                $value = $values[$handle] ?? null;
+
+                if (! blank($value) && ! Writer::same($value, $own)) {
+                    $translated[$language] = [$handle => $value];
+                }
+            }
+
+            $data[$handle] = $translated ?: null;
+        }
+
+        return $data;
     }
 
     /** og:locale of the current language: the site's for the default language, else e.g. en_US. */

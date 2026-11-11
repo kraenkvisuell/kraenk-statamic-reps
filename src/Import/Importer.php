@@ -7,6 +7,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Kraenkvisuell\StatamicReps\Listeners\SyncRelations;
 use Kraenkvisuell\StatamicReps\Reps;
+use Kraenkvisuell\StatamicReps\Translations\SimpleTranslations;
 use Statamic\Facades\Entry;
 use Statamic\Facades\GlobalSet;
 use Statamic\Facades\Nav;
@@ -121,6 +122,8 @@ class Importer
 
             if ($site === $default) {
                 $data = $values + $data;
+            } elseif (SimpleTranslations::enabled()) {
+                $localized[$locale] = $values;   // one site: keyed by language (Writer::upsert)
             } elseif (Site::get($site)) {
                 $localized[$site] = $values;
             }
@@ -135,7 +138,8 @@ class Importer
         $slugs = [];
 
         foreach ($this->legacy->locales() as $locale => $site) {
-            $slugs[$site] = Str::slug($this->legacy->translated($slug, $locale) ?: $fallback) ?: Str::slug($fallback);
+            $key = SimpleTranslations::enabled() && $site !== Site::default()->handle() ? $locale : $site;
+            $slugs[$key] = Str::slug($this->legacy->translated($slug, $locale) ?: $fallback) ?: Str::slug($fallback);
         }
 
         return $slugs;
@@ -700,8 +704,18 @@ class Importer
 
         $default = Site::default()->handle();
         $base = null;
+        $locales = $this->legacy->locales();
 
-        foreach ($this->legacy->locales() as $locale => $site) {
+        // one site, every language in the variables: the other languages go into translated fields
+        if (SimpleTranslations::enabled()) {
+            $defaultLocale = array_search($default, $locales, true);
+            $others = collect($locales)->except($defaultLocale)->map(fn ($site, $locale) => $values($locale))->all();
+            $merged = SimpleTranslations::merge($set->blueprint(), $values($defaultLocale), $others);
+            $values = fn () => $merged;
+            $locales = [$defaultLocale => $default];
+        }
+
+        foreach ($locales as $locale => $site) {
             if (! Site::get($site)) {
                 continue;
             }
@@ -811,7 +825,7 @@ class Importer
         $isPage = is_numeric($item->value) && str_contains((string) ($item->class ?? 'Page'), 'Page');
         $entryId = $isPage ? $this->writer->id('pages', $item->value) : null;
         $entry = $entryId ? Entry::find($entryId) : null;
-        $entryTitle = $entry ? ($entry->in(Site::default()->handle())?->get('navi_title') ?: $entry->get('title')) : null;
+        $entryTitle = $entry ? (SimpleTranslations::read($entry->in(Site::default()->handle()), 'navi_title') ?: $entry->get('title')) : null;
 
         $children = $all->where('parent_id', $item->id)->map(fn ($child) => $this->branch($child, $all, $locale))->filter()->values()->all();
 

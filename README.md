@@ -49,6 +49,25 @@ unchanged. `Translations\Listener` writes the other languages to the localizatio
 is saved from the CP (an emptied field falls back to German); saves without these values (the
 import) pass untouched.
 
+## Simple translations (one site, kombinatrotweiss)
+
+With [bastihilger/simple-statamic-translations](https://github.com/bastihilger/simple-statamic-translations)
+installed, a single site and the feature `simple_translations` on, every language lives in the same
+entry instead of a site per language (`Translations\SimpleTranslations`):
+
+- every localizable field of the addon's blueprints (and of `<blueprint>_extra` fieldsets) is
+  wrapped in a translated field of its own handle, so templates read it as before
+  (`{{ description }}` is the current language's); `title` and `slug` stay plain and get
+  `title_translation` / `slug_translation`; `robots` stays plain (the same in every language),
+- the language comes from the URL (`/de/…`, `/en/…`, `{language}` at the start of every
+  collection route),
+- PHP that reads values raw uses `SimpleTranslations::read($item, $key)` (the SEO tag, menu
+  labels), language links and hreflang `SimpleTranslations::urls($entry)`,
+- `reps:import` / `reps:resync` write the other languages into the translated fields
+  (`SimpleTranslations::merge`: other languages only where they differ, idempotent) instead of
+  localizations; `legacy.locales` maps the legacy locales to language codes
+  (`['de' => 'default', 'en' => 'en']`), `seo.locales` the og:locale per language.
+
 ## Install in a site
 
 ```jsonc
