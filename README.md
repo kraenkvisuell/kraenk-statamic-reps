@@ -31,8 +31,9 @@ fields (`reps_large_preview`, `reps_flag`, `replicator_preview: false` for the r
 
 ## Translations (multi-site)
 
-On a multi-site site (kombinatrotweiss) every language is edited in the default site's form and the
-CP shows no other site at all (feature `translatable_fields`, on by default, no effect on single-site
+On a multi-site site (kombinatrotweiss) every language is edited in the default site's form; the
+"Working in" panel and the site dropdown of the globals are hidden, and the edit page of a
+localization opens its origin (feature `translatable_fields`, on by default, no effect on single-site
 sites). Built on `daun/statamic-multisite-field`:
 
 - every `localizable: true` field of the addon's blueprints (and of `<blueprint>_extra` fieldsets)
@@ -47,20 +48,6 @@ localization's own values). So templates, routing, SEO and `reps:import` / `reps
 unchanged. `Translations\Listener` writes the other languages to the localizations when the origin
 is saved from the CP (an emptied field falls back to German); saves without these values (the
 import) pass untouched.
-
-The other sites stay out of the CP (every entry exists in every language, so there's nothing to
-switch to):
-
-- `Translations\Sites` makes the default site the only authorized and selected one there, and
-  `Translations\SitePolicy` / `GlobalVariablesPolicy` deny viewing another site and its global
-  variables, also for super users. Statamic builds every site switch from these: the header's site
-  selector, the "Site" filter of the entry lists, the site dropdown of trees, navigations and global
-  sets, the "Working in" panel. The entry lists show only German entries, without a "Site" column
-  (`Translations\AddSiteColumnToBlueprint`). The edit URL of a localization redirects to its origin.
-- Trees are edited in German only: saving a German collection tree or navigation saves the same
-  tree for the other sites (`Listener::treeSaved`; collection trees with each site's localizations,
-  navigations with the same ids). Menu items with an own title have it in every language.
-- The frontend, the data and `reps:resync` are unaffected.
 
 ## Install in a site
 
