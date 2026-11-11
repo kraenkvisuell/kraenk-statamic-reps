@@ -4,9 +4,12 @@ namespace Kraenkvisuell\StatamicReps\Translations;
 
 use Illuminate\Support\Str;
 use Kraenkvisuell\StatamicReps\Fieldtypes\Translatable;
+use Statamic\Events\CollectionTreeSaved;
 use Statamic\Events\EntrySaving;
 use Statamic\Events\GlobalVariablesSaved;
 use Statamic\Events\GlobalVariablesSaving;
+use Statamic\Events\NavTreeSaved;
+use Statamic\Facades\Entry;
 use Statamic\Facades\Site;
 use Statamic\Globals\Variables;
 
@@ -45,6 +48,76 @@ class Listener
         foreach (Translations::otherSites() as $site) {
             Translatable::localization($variables, $site)?->save();
         }
+    }
+
+    /**
+     * Only the default site's trees are edited (the CP shows no other site), and every site has
+     * the same pages, menus and orders: the other sites' trees follow. Collection trees list each
+     * site's own entries, so the origins become their localizations; navigations keep the ids.
+     */
+    public function treeSaved(CollectionTreeSaved|NavTreeSaved $event): void
+    {
+        $tree = $event->tree;
+
+        if (! Translations::enabled() || $tree->locale() !== Site::default()->handle()) {
+            return;
+        }
+
+        $structure = $tree->structure();
+        $isCollection = $event instanceof CollectionTreeSaved;
+
+        foreach (Translations::otherSites() as $site) {
+            if ($isCollection && ! in_array($site, $structure->collection()->sites()->all(), true)) {
+                continue;
+            }
+
+            $localizations = $isCollection ? $this->localizationIds($tree->tree(), $site) : null;
+            $branches = $localizations === null ? $tree->tree() : $this->mapEntries($tree->tree(), $localizations);
+            $other = $structure->in($site) ?? $structure->makeTree($site);
+
+            if ($other->tree() != $branches) {
+                $other->tree($branches)->save();
+            }
+        }
+    }
+
+    /** @return array<string, string> origin id => localization id */
+    protected function localizationIds(array $branches, string $site): array
+    {
+        $ids = [];
+        array_walk_recursive($branches, function ($value, $key) use (&$ids) {
+            if ($key === 'entry') {
+                $ids[] = $value;
+            }
+        });
+
+        return Entry::query()->whereIn('origin', $ids)->where('site', $site)->get()
+            ->mapWithKeys(fn ($entry) => [$entry->origin()?->id() => $entry->id()])->all();
+    }
+
+    /** A branch without a localization is left out; its children move up. */
+    protected function mapEntries(array $branches, array $localizations): array
+    {
+        $result = [];
+
+        foreach ($branches as $branch) {
+            $children = $this->mapEntries($branch['children'] ?? [], $localizations);
+            unset($branch['children']);
+
+            if (isset($branch['entry'])) {
+                if (! isset($localizations[$branch['entry']])) {
+                    array_push($result, ...$children);
+
+                    continue;
+                }
+
+                $branch['entry'] = $localizations[$branch['entry']];
+            }
+
+            $result[] = $children ? $branch + ['children' => $children] : $branch;
+        }
+
+        return $result;
     }
 
     protected function saving($item): void
