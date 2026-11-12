@@ -156,6 +156,12 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   deploy script instead of `static:warm --queue`. With `--queue` it first clears the warm queue
   (`static_caching.warm_queue`, give it a queue of its own, e.g. `warm`): jobs still waiting from
   an earlier run (a deploy shortly after another) would otherwise go before this run's tiers.
+  Statamic's warm jobs are unique per URL and `queue:clear` leaves their locks behind, so it
+  releases the locks of the jobs it drops; without that, the new run's jobs for the same URLs
+  would be dropped silently.
+- **Warm job with an expiring lock:** the addon sets `static_caching.warm_job` (when the site leaves
+  it empty) to `StaticCaching\WarmJob`, Statamic's job with a one-hour unique lock. Statamic's
+  lock never expires: a warm job removed from the queue without running blocked its URL for good.
 
 ## License
 

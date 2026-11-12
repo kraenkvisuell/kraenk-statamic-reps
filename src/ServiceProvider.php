@@ -78,6 +78,11 @@ class ServiceProvider extends AddonServiceProvider
 
         $this->registerComputedValues();
 
+        // warm jobs whose unique lock expires (see StaticCaching\WarmJob)
+        if (! config('statamic.static_caching.warm_job')) {
+            config(['statamic.static_caching.warm_job' => StaticCaching\WarmJob::class]);
+        }
+
         Event::listen(EntryBlueprintFound::class, AdjustBlueprints::class);
         Event::listen(EntrySaved::class, SyncRelations::class);
         Event::listen(EntrySaving::class, [Translations\Listener::class, 'entrySaving']);

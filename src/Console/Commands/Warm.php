@@ -3,10 +3,16 @@
 namespace Kraenkvisuell\StatamicReps\Console\Commands;
 
 use Bastihilger\SimpleStatamicTranslations\Translations as Languages;
+use Illuminate\Bus\UniqueLock;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Cache\Repository as Cache;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Queue\DatabaseQueue;
+use Illuminate\Queue\RedisQueue;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Queue;
@@ -72,6 +78,10 @@ class Warm extends Command
      * this run's tiers start at the front instead of behind thousands of old slideshow pages.
      * Nothing is lost: this run renders every page again. Only a queue of its own is cleared
      * (statamic.static_caching.warm_queue), never the default one with other jobs.
+     *
+     * The warm jobs are unique per URL, and queue:clear leaves their locks behind: this run's
+     * jobs for the same URLs would be dropped. So the locks of the waiting jobs are released
+     * first.
      */
     protected function clearQueue(): void
     {
@@ -85,12 +95,55 @@ class Warm extends Command
         }
 
         try {
-            $size = Queue::connection($connection)->size($queue);
+            $payloads = $this->waitingPayloads($connection, $queue);
+            $released = $this->releaseUniqueLocks($payloads);
             $this->call('queue:clear', ['connection' => $connection, '--queue' => $queue, '--force' => true]);
-            $this->line(sprintf('Dropped %d waiting jobs of an earlier run (%s queue).', $size, $queue));
+            $this->line(sprintf('Dropped %d waiting jobs of an earlier run (%s queue, %d locks released).', count($payloads), $queue, $released));
         } catch (Throwable $e) {
             $this->warn("Couldn't clear the $queue queue: ".$e->getMessage());
         }
+    }
+
+    /** @return list<string> the payloads of the jobs waiting on the queue (Redis or database) */
+    protected function waitingPayloads(string $connection, string $queue): array
+    {
+        $driver = Queue::connection($connection);
+
+        if ($driver instanceof RedisQueue) {
+            $key = $driver->getQueue($queue);
+            $redis = $driver->getConnection();
+
+            return [...$redis->lrange($key, 0, -1), ...$redis->zrange("$key:delayed", 0, -1)];
+        }
+
+        if ($driver instanceof DatabaseQueue) {
+            return DB::connection(config("queue.connections.$connection.connection"))
+                ->table(config("queue.connections.$connection.table", 'jobs'))
+                ->where('queue', $queue)
+                ->whereNull('reserved_at')
+                ->pluck('payload')
+                ->all();
+        }
+
+        return [];
+    }
+
+    protected function releaseUniqueLocks(array $payloads): int
+    {
+        $locks = new UniqueLock(app(Cache::class));
+        $released = 0;
+
+        foreach ($payloads as $payload) {
+            $command = json_decode($payload, true)['data']['command'] ?? null;
+            $job = is_string($command) ? rescue(fn () => unserialize($command), report: false) : null;
+
+            if ($job instanceof ShouldBeUnique) {
+                $locks->release($job);
+                $released++;
+            }
+        }
+
+        return $released;
     }
 
     /**
