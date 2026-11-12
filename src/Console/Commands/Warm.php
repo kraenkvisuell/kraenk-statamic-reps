@@ -9,6 +9,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Facades\Queue;
 use Kraenkvisuell\StatamicReps\Translations\SimpleTranslations;
 use Statamic\Facades\Entry;
 use Statamic\Facades\Site;
@@ -21,7 +22,8 @@ use Throwable;
  * menu whatever builds it), the artists, then everything else. Every language (simple
  * translations' /de, /en, or every site). Each tier is one static:warm run limited with
  * --include; the last one excludes all of them. Queued (--queue), Horizon renders the tiers in
- * this order, since jobs run in the order they were queued.
+ * this order, since jobs run in the order they were queued; waiting jobs of an earlier run are
+ * dropped first (see clearQueue()).
  */
 #[Signature('reps:warm {--queue : Queue the requests (Horizon renders them in tier order)} {--insecure : Skip SSL verification} {--uncached : Only warm uncached URLs} {--dry-run : Only list the tiers}')]
 #[Description('Warm the static cache in tiers: home, menu, artists, the rest')]
@@ -34,6 +36,10 @@ class Warm extends Command
             'menu' => fn () => $this->menuPaths(),
             'artists' => fn () => $this->artistPaths(),
         ]);
+
+        if ($this->option('queue') && ! $this->option('dry-run')) {
+            $this->clearQueue();
+        }
 
         $done = collect();
 
@@ -59,6 +65,32 @@ class Warm extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Drops warm jobs still waiting from an earlier run (a deploy shortly after another one), so
+     * this run's tiers start at the front instead of behind thousands of old slideshow pages.
+     * Nothing is lost: this run renders every page again. Only a queue of its own is cleared
+     * (statamic.static_caching.warm_queue), never the default one with other jobs.
+     */
+    protected function clearQueue(): void
+    {
+        $queue = config('statamic.static_caching.warm_queue');
+        $connection = config('statamic.static_caching.warm_queue_connection') ?? config('queue.default');
+
+        if (! $queue || $queue === config("queue.connections.$connection.queue", 'default')) {
+            $this->warn('static_caching.warm_queue is the default queue: earlier warm jobs stay queued before this run.');
+
+            return;
+        }
+
+        try {
+            $size = Queue::connection($connection)->size($queue);
+            $this->call('queue:clear', ['connection' => $connection, '--queue' => $queue, '--force' => true]);
+            $this->line(sprintf('Dropped %d waiting jobs of an earlier run (%s queue).', $size, $queue));
+        } catch (Throwable $e) {
+            $this->warn("Couldn't clear the $queue queue: ".$e->getMessage());
+        }
     }
 
     /**

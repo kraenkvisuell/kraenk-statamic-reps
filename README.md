@@ -153,7 +153,9 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   page(s), every internal link in the home page's `<nav>` elements (the menu, whatever builds it),
   the published artists, then everything else (`--exclude` of the earlier tiers). Every language
   (simple translations) or site. Queued, Horizon renders the tiers in that order. Use it in the
-  deploy script instead of `static:warm --queue`.
+  deploy script instead of `static:warm --queue`. With `--queue` it first clears the warm queue
+  (`static_caching.warm_queue`, give it a queue of its own, e.g. `warm`): jobs still waiting from
+  an earlier run (a deploy shortly after another) would otherwise go before this run's tiers.
 
 ## License
 
