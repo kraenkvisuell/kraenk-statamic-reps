@@ -165,6 +165,9 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   `warm_queue` (e.g. `recache`) only carries the re-caching after saves. Let Horizon take the
   queues in order without balancing (`'queue' => ['recache', 'default', 'warm']`,
   `'balance' => false`): saves show up within seconds even during a long deploy run.
+- **Slide pages in the static cache:** the `slideshow_index_segment` route (`/…/<slideshow>/<n>`)
+  runs through `statamic.web`, so these pages are cached like Statamic's own; static:warm doesn't
+  list them, so the addon adds the cached ones to every warm run (`StaticWarm` hook `additional`).
 - **Warm job with an expiring lock:** the addon sets `static_caching.warm_job` (when the site leaves
   it empty) to `StaticCaching\WarmJob`, Statamic's job with a one-hour unique lock. Statamic's
   lock never expires: a warm job removed from the queue without running blocked its URL for good.

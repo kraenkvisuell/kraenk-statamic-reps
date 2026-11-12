@@ -18,10 +18,12 @@ foreach (Reps::config('legacy.id_redirects', []) as $pattern => $collection) {
         ->defaults('reps_collection', $collection);
 }
 
-// a slideshow URL followed by the number of the slide to start at
+// a slideshow URL followed by the number of the slide to start at; statamic.web like Statamic's own
+// frontend route, so these pages are static-cached too (addon routes only get `web`)
 if (Reps::config('slideshow_index_segment')) {
     Route::get('{path}/{index}', SlideshowIndexController::class)
         ->where(['path' => '(?!cp/|!/|img/|api/).+', 'index' => '[0-9]+'])
+        ->middleware('statamic.web')
         ->name('reps.slideshow-index');
 }
 
