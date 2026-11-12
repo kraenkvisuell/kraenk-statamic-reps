@@ -2,6 +2,7 @@
 
 namespace Kraenkvisuell\StatamicReps\Import;
 
+use Bastihilger\SimpleStatamicTranslations\Routing\TranslatedUris;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Kraenkvisuell\StatamicReps\Translations\SimpleTranslations;
@@ -255,6 +256,11 @@ class Writer
             if (! $this->dryRun) {
                 $entry->deleteQuietly();
                 unset($this->entries[$collection][$legacyId]);
+
+                // deleted quietly: no event removes its URIs in the other languages
+                if (SimpleTranslations::enabled()) {
+                    TranslatedUris::forget($entry);
+                }
             }
         }
     }
