@@ -148,6 +148,12 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   parallel (about 5 minutes for 15,000 assets; seconds when everything is cached), in the deploy
   script before `static:warm`. Metadata edited in another environment (the bucket is shared) stays
   cached until `php artisan cache:clear asset_meta`.
+- **Static cache warming in tiers:** `reps:warm [--queue] [--insecure] [--uncached] [--dry-run]` runs
+  Statamic's `static:warm` once per tier, so the pages visitors see first are cached first: the home
+  page(s), every internal link in the home page's `<nav>` elements (the menu, whatever builds it),
+  the published artists, then everything else (`--exclude` of the earlier tiers). Every language
+  (simple translations) or site. Queued, Horizon renders the tiers in that order. Use it in the
+  deploy script instead of `static:warm --queue`.
 
 ## License
 
