@@ -1,7 +1,19 @@
 {
     "name": "kraenkvisuell/kraenk-statamic-reps",
     "description": "Shared backend for kraenkvisuell's artist representation sites (Statamic 6): content model, SEO, legacy Nova import and re-sync, Bunny storage.",
-    "license": "proprietary",
+    "homepage": "https://github.com/kraenkvisuell/kraenk-statamic-reps",
+    "keywords": [
+        "statamic",
+        "statamic-addon",
+        "artist-representation"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "kraenkvisuell",
+            "homepage": "https://github.com/kraenkvisuell"
+        }
+    ],
     "type": "statamic-addon",
     "require": {
         "php": "^8.3",

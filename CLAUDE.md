@@ -2,7 +2,7 @@
 
 # CLAUDE.md
 
-Private Statamic addon `kraenkvisuell/kraenk-statamic-reps`: the shared **backend** of the artist
+Statamic addon `kraenkvisuell/kraenk-statamic-reps`: the shared **backend** of the artist
 representation sites `~/Code/kombinatrotweiss`, `~/Code/wildfoxrunning`, `~/Code/visualeyes`,
 `~/Code/aiartists` (rebuilt from the Nova sites `~/Code/krw`, `~/Code/wfr`, `~/Code/visualeyes-artists`,
 `~/Code/ai-artists`). See README.md for what it provides. Frontend code (templates, CSS, JS) never goes
@@ -10,7 +10,7 @@ here – only content model, import/re-sync, SEO, lightbox, queries, storage.
 
 - Every behaviour a site can change is a key in `config/kraenk-statamic-reps.php` with a default.
   Don't read `env()` outside that config file (config caching).
-- The sites require tagged releases (`^0.1`) from the private GitHub repo; releasing is in README.md
+- The sites require tagged releases (`^0.1`) from Packagist (public repo, MIT); releasing is in README.md
   ("Releases"). To test a change before tagging, point a site at `../kraenk-statamic-reps` as a path
   repository locally (don't commit that) and run its tests – a change here changes all four.
 - The import must stay idempotent: a second `reps:import --dry-run` reports nothing. Compare values

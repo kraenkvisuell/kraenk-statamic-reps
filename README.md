@@ -1,6 +1,6 @@
 # kraenkvisuell/kraenk-statamic-reps
 
-Private Statamic 6 addon with the **backend** shared by kraenkvisuell's artist representation sites
+Statamic 6 addon with the **backend** shared by kraenkvisuell's artist representation sites
 (kombinatrotweiss, wildfoxrunning, visualeyes, aiartists), which replaced their Laravel Nova 3 sites.
 Frontends (Antlers, CSS, JS) stay in each site; this package holds the content model, the import and
 re-sync from the old Nova sites, SEO, the lightbox and the portfolio queries. Everything a site does
@@ -70,15 +70,7 @@ entry instead of a site per language (`Translations\SimpleTranslations`):
 
 ## Install in a site
 
-```jsonc
-// composer.json
-"repositories": {
-    "reps": { "type": "vcs", "url": "https://github.com/kraenkvisuell/kraenk-statamic-reps" }
-}
-```
-
-`composer require kraenkvisuell/kraenk-statamic-reps:^0.1` (needs GitHub access to the private repo, e.g.
-`composer config --global github-oauth.github.com <token>` / Forge's GitHub integration). For working
+`composer require kraenkvisuell/kraenk-statamic-reps:^0.1` (from Packagist). For working
 on the addon next to a site, point it at a path repository (`../kraenk-statamic-reps`, symlinked) locally
 without committing that.
 
@@ -156,3 +148,7 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   parallel (about 5 minutes for 15,000 assets; seconds when everything is cached), in the deploy
   script before `static:warm`. Metadata edited in another environment (the bucket is shared) stays
   cached until `php artisan cache:clear asset_meta`.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
