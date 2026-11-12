@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Queue;
+use Kraenkvisuell\StatamicReps\Reps;
 use Kraenkvisuell\StatamicReps\Translations\SimpleTranslations;
 use Statamic\Facades\Entry;
 use Statamic\Facades\Site;
@@ -29,12 +30,16 @@ use Throwable;
  * translations' /de, /en, or every site). Each tier is one static:warm run limited with
  * --include; the last one excludes all of them. Queued (--queue), Horizon renders the tiers in
  * this order, since jobs run in the order they were queued; waiting jobs of an earlier run are
- * dropped first (see clearQueue()).
+ * dropped first (see clearQueue()). Queued runs go to kraenk-statamic-reps.static_caching.warm_queue,
+ * so Statamic's warm_queue can keep the re-caching after saves ahead of them.
  */
 #[Signature('reps:warm {--queue : Queue the requests (Horizon renders them in tier order)} {--insecure : Skip SSL verification} {--uncached : Only warm uncached URLs} {--dry-run : Only list the tiers}')]
 #[Description('Warm the static cache in tiers: home, menu, artists, the rest')]
 class Warm extends Command
 {
+    /** Tells the static:warm processes which queue to use (read by the ServiceProvider). */
+    public const QUEUE_ENV = 'REPS_WARM_QUEUE';
+
     public function handle(): int
     {
         $tiers = collect([
@@ -77,7 +82,7 @@ class Warm extends Command
      * Drops warm jobs still waiting from an earlier run (a deploy shortly after another one), so
      * this run's tiers start at the front instead of behind thousands of old slideshow pages.
      * Nothing is lost: this run renders every page again. Only a queue of its own is cleared
-     * (statamic.static_caching.warm_queue), never the default one with other jobs.
+     * (kraenk-statamic-reps.static_caching.warm_queue), never the default one with other jobs.
      *
      * The warm jobs are unique per URL, and queue:clear leaves their locks behind: this run's
      * jobs for the same URLs would be dropped. So the locks of the waiting jobs are released
@@ -85,11 +90,11 @@ class Warm extends Command
      */
     protected function clearQueue(): void
     {
-        $queue = config('statamic.static_caching.warm_queue');
+        $queue = $this->queue();
         $connection = config('statamic.static_caching.warm_queue_connection') ?? config('queue.default');
 
         if (! $queue || $queue === config("queue.connections.$connection.queue", 'default')) {
-            $this->warn('static_caching.warm_queue is the default queue: earlier warm jobs stay queued before this run.');
+            $this->warn('The warm queue is the default queue: earlier warm jobs stay queued before this run.');
 
             return;
         }
@@ -102,6 +107,11 @@ class Warm extends Command
         } catch (Throwable $e) {
             $this->warn("Couldn't clear the $queue queue: ".$e->getMessage());
         }
+    }
+
+    protected function queue(): ?string
+    {
+        return Reps::config('static_caching.warm_queue') ?? config('statamic.static_caching.warm_queue');
     }
 
     /** @return list<string> the payloads of the jobs waiting on the queue (Redis or database) */
@@ -165,7 +175,7 @@ class Warm extends Command
             $command[] = $value === true ? $option : "$option=$value";
         }
 
-        $result = Process::forever()->run($command, fn ($type, $output) => $this->output->write($output));
+        $result = Process::forever()->env([self::QUEUE_ENV => (string) $this->queue()])->run($command, fn ($type, $output) => $this->output->write($output));
 
         if ($result->failed()) {
             throw new \RuntimeException('static:warm failed: '.$result->errorOutput());

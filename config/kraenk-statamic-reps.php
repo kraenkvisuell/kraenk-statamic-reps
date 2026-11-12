@@ -236,6 +236,16 @@ return [
     ],
 
     /*
+    | Static cache warming. reps:warm (deploys) queues its runs on this queue, with its own job
+    | (StaticCaching\DeployWarmJob); Statamic's static_caching.warm_queue then only carries the
+    | re-caching after saves, which Horizon should work through first (e.g. queues
+    | ['recache', 'default', 'warm'] without balancing). null: Statamic's warm_queue.
+    */
+    'static_caching' => [
+        'warm_queue' => null,
+    ],
+
+    /*
     | The old Nova site: database dump, media and server, read by reps:import and reps:resync.
     */
     'legacy' => [

@@ -159,6 +159,12 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   Statamic's warm jobs are unique per URL and `queue:clear` leaves their locks behind, so it
   releases the locks of the jobs it drops; without that, the new run's jobs for the same URLs
   would be dropped silently.
+- **Deploy runs on their own queue:** with `static_caching.warm_queue` set in the addon config
+  (e.g. `warm`), `reps:warm` queues its runs there, with its own job (`DeployWarmJob`, so a
+  waiting deploy job doesn't swallow a save's re-cache of the same URL), and Statamic's
+  `warm_queue` (e.g. `recache`) only carries the re-caching after saves. Let Horizon take the
+  queues in order without balancing (`'queue' => ['recache', 'default', 'warm']`,
+  `'balance' => false`): saves show up within seconds even during a long deploy run.
 - **Warm job with an expiring lock:** the addon sets `static_caching.warm_job` (when the site leaves
   it empty) to `StaticCaching\WarmJob`, Statamic's job with a one-hour unique lock. Statamic's
   lock never expires: a warm job removed from the queue without running blocked its URL for good.

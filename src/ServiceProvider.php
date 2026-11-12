@@ -83,6 +83,14 @@ class ServiceProvider extends AddonServiceProvider
             config(['statamic.static_caching.warm_job' => StaticCaching\WarmJob::class]);
         }
 
+        // a static:warm run started by reps:warm: its queue and job (see Console\Commands\Warm)
+        if (($queue = getenv(Commands\Warm::QUEUE_ENV)) !== false && $queue !== '') {
+            config([
+                'statamic.static_caching.warm_queue' => $queue,
+                'statamic.static_caching.warm_job' => StaticCaching\DeployWarmJob::class,
+            ]);
+        }
+
         Event::listen(EntryBlueprintFound::class, AdjustBlueprints::class);
         Event::listen(EntrySaved::class, SyncRelations::class);
         Event::listen(EntrySaving::class, [Translations\Listener::class, 'entrySaving']);
