@@ -6,7 +6,7 @@ tabs:
       -
         fields:
           - { handle: title, field: { type: text, display: Title, required: true, localizable: false } }
-          - { handle: artist, field: { type: entries, display: Artist, collections: [artists], max_items: 1, mode: select, instructions: 'Set by adding the slideshow to an artist.', visibility: read_only, localizable: false } }
+          - { handle: artist, field: { type: entries, display: Artist, collections: [artists], max_items: 1, mode: select, visibility: hidden, localizable: false } }
           - { handle: categories, field: { type: entries, display: Categories, collections: [categories], mode: select, localizable: false } }
           - { handle: discipline, field: { type: entries, display: Discipline, collections: [disciplines], max_items: 1, mode: select, reps_feature: slideshow_disciplines, localizable: false } }
           - { handle: description, field: { type: bard, display: Description, buttons: [bold, italic, anchor], save_html: false, localizable: true } }
