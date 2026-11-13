@@ -171,6 +171,8 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   in front of the site follows the static cache: every URL a warm job has just rendered and every
   invalidated URL is purged, the whole zone when the static cache is cleared (`reps:warm`,
   `static:clear`). Otherwise Bunny keeps its copy until it expires, and saves don't reach visitors.
+- **Special projects only inside their category:** the `special_projects` collection is removed from
+  Collections in the CP nav; its entries are edited through the special category's projects field.
 - **CP thumbnails from the Glide CDN:** Statamic's `/cp/thumbnails/…` route is a PHP request per
   image even when the thumbnail exists (boot, login check, streaming the file back from Bunny), and
   the site's CDN doesn't cache it. Once the route has generated a thumbnail, its path is in Glide's

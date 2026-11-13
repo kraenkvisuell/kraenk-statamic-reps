@@ -22,6 +22,7 @@ use Statamic\Events\UrlInvalidated;
 use Statamic\Facades\Blink;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Collection;
+use Statamic\Facades\CP\Nav;
 use Statamic\Facades\Entry;
 use Statamic\Providers\AddonServiceProvider;
 use Statamic\Statamic;
@@ -90,6 +91,8 @@ class ServiceProvider extends AddonServiceProvider
         Event::listen(UrlInvalidated::class, fn (UrlInvalidated $event) => StaticCaching\BunnyPurge::url($event->url));
         Event::listen(StaticCacheCleared::class, fn () => StaticCaching\BunnyPurge::all());
 
+        $this->hideSpecialProjectsInNav();
+
         // CP thumbnails from the Glide CDN once generated (see Imaging\CdnThumbnailAsset)
         $this->app->bind(Asset::class, Imaging\CdnThumbnailAsset::class);
 
@@ -109,6 +112,25 @@ class ServiceProvider extends AddonServiceProvider
     }
 
     // GIFs keep their original file instead of a Glide copy (see OriginalGifManipulator)
+    /**
+     * Special projects are edited inside their special category (its projects field), so the
+     * collection has no entry of its own under Collections in the CP nav. Matched by URL: the
+     * collection's title differs between sites.
+     */
+    protected function hideSpecialProjectsInNav(): void
+    {
+        Nav::extend(function ($nav) {
+            $collection = Collection::findByHandle('special_projects');
+            $parent = $collection ? $nav->find('Content', 'Collections') : null;
+
+            if (! $parent || ! $children = $parent->resolveChildren()->children()) {
+                return;
+            }
+
+            $parent->children($children->reject(fn ($item) => $item->url() === $collection->showUrl()));
+        });
+    }
+
     protected function registerImaging(): void
     {
         if (Reps::config('imaging.original_gifs', true)) {
