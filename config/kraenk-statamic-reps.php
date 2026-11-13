@@ -236,13 +236,17 @@ return [
     ],
 
     /*
-    | Static cache warming. reps:warm (deploys) queues its runs on this queue, with its own job
+    | Static cache warming. reps:warm (deploys, saves that change every page) queues on this queue, with its own job
     | (StaticCaching\DeployWarmJob); Statamic's static_caching.warm_queue then only carries the
     | re-caching after saves, which Horizon should work through first (e.g. queues
     | ['recache', 'default', 'warm'] without balancing). null: Statamic's warm_queue.
     */
     'static_caching' => [
         'warm_queue' => null,
+        // The address warm requests connect to instead of the domain's DNS (the server itself,
+        // 127.0.0.1): behind a CDN that ignores query strings, re-cache requests would otherwise
+        // be answered with the CDN's old copy and never reach the server. null: the domain.
+        'warm_ip' => env('REPS_WARM_IP'),
     ],
 
     /*

@@ -3,6 +3,7 @@
 namespace Kraenkvisuell\StatamicReps\Console\Commands;
 
 use Bastihilger\SimpleStatamicTranslations\Translations as Languages;
+use GuzzleHttp\Psr7\Request;
 use Illuminate\Bus\UniqueLock;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -14,43 +15,49 @@ use Illuminate\Queue\RedisQueue;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Queue;
 use Kraenkvisuell\StatamicReps\Reps;
+use Kraenkvisuell\StatamicReps\StaticCaching\DeployWarmJob;
+use Kraenkvisuell\StatamicReps\StaticCaching\WarmJob;
 use Kraenkvisuell\StatamicReps\Translations\SimpleTranslations;
 use Statamic\Facades\Entry;
 use Statamic\Facades\Site;
 use Statamic\Facades\URL;
+use Statamic\StaticCaching\Cacher;
 use Throwable;
 
 /**
- * Statamic's static:warm in tiers, so the pages visitors see first are cached first: the home
- * page(s), every page linked in the menu (the home page's <nav> elements, so it follows the
- * menu whatever builds it), the artists, then everything else. Every language (simple
- * translations' /de, /en, or every site). Each tier is one static:warm run limited with
- * --include; the last one excludes all of them. Queued (--queue), Horizon renders the tiers in
- * this order, since jobs run in the order they were queued; waiting jobs of an earlier run are
- * dropped first (see clearQueue()). Queued runs go to kraenk-statamic-reps.static_caching.warm_queue,
- * so Statamic's warm_queue can keep the re-caching after saves ahead of them.
+ * Re-caches the site: clears the static cache, then warms the pages visitors see first, in this
+ * order: the home page(s), every page linked in the menu (the home page's <nav> elements, so it
+ * follows the menu whatever builds it), the artists, the categories. Every language (simple translations' /de,
+ * /en, or every site). Everything else is cached on its first visit.
+ *
+ * Deploys run it, and a save that changes every page (menus, globals …) should too, instead of
+ * re-caching thousands of pages. Queued (--queue), the jobs go to
+ * kraenk-statamic-reps.static_caching.warm_queue in this order; waiting jobs of an earlier run are
+ * dropped first (see clearQueue()). Without --queue the pages are requested right away.
  */
-#[Signature('reps:warm {--queue : Queue the requests (Horizon renders them in tier order)} {--insecure : Skip SSL verification} {--uncached : Only warm uncached URLs} {--dry-run : Only list the tiers}')]
-#[Description('Warm the static cache in tiers: home, menu, artists, the rest')]
+#[Signature('reps:warm {--queue : Queue the requests (Horizon renders them in this order)} {--insecure : Skip SSL verification} {--dry-run : Only list the pages, clear nothing}')]
+#[Description('Clear the static cache and warm the home page, the menu pages, the artists and the categories')]
 class Warm extends Command
 {
-    /** Tells the static:warm processes which queue to use (read by the ServiceProvider). */
-    public const QUEUE_ENV = 'REPS_WARM_QUEUE';
-
-    public function handle(): int
+    public function handle(Cacher $cacher): int
     {
-        $tiers = collect([
-            'home' => $this->homePaths(),
-            'menu' => fn () => $this->menuPaths(),
-            'artists' => fn () => $this->artistPaths(),
-        ]);
+        if (! $this->option('dry-run')) {
+            $cacher->flush();
+            $this->line('Static cache cleared.');
+        }
 
         if ($this->option('queue') && ! $this->option('dry-run')) {
             $this->clearQueue();
         }
+
+        $tiers = collect([
+            'home' => $this->homePaths(),
+            'menu' => fn () => $this->menuPaths(),
+            'artists' => fn () => $this->entryPaths('artists'),
+            'categories' => fn () => $this->entryPaths('categories'),
+        ]);
 
         $done = collect();
 
@@ -64,15 +71,9 @@ class Warm extends Command
                 $paths->each(fn ($path) => $this->line("  $path"));
             }
 
-            if ($paths->isNotEmpty() && ! $this->option('dry-run')) {
-                $this->warm(['--include' => $paths->implode(',')]);
+            if (! $this->option('dry-run')) {
+                $paths->each(fn ($path) => $this->warm($path));
             }
-        }
-
-        $this->line('<info>rest</info>: everything else static:warm finds');
-
-        if (! $this->option('dry-run')) {
-            $this->warm($done->isEmpty() ? [] : ['--exclude' => $done->implode(',')]);
         }
 
         return self::SUCCESS;
@@ -156,30 +157,30 @@ class Warm extends Command
         return $released;
     }
 
-    /**
-     * One static:warm run per tier, each in its own process: the command keeps its URL list on
-     * the instance, and $this->call() would reuse the instance of the first tier.
-     */
-    protected function warm(array $options): void
+    protected function warm(string $path): void
     {
-        $options = array_filter([
-            ...$options,
-            '--queue' => $this->option('queue'),
-            '--insecure' => $this->option('insecure'),
-            '--uncached' => $this->option('uncached'),
-        ]);
+        $request = new Request('GET', URL::makeAbsolute($path));
+        $config = $this->clientConfig();
 
-        $command = [PHP_BINARY, base_path('artisan'), 'statamic:static:warm'];
+        if (! $this->option('queue')) {
+            try {
+                (new WarmJob($request, $config))->handle();
+            } catch (Throwable $e) {
+                $this->warn("$path: ".$e->getMessage());
+            }
 
-        foreach ($options as $option => $value) {
-            $command[] = $value === true ? $option : "$option=$value";
+            return;
         }
 
-        $result = Process::forever()->env([self::QUEUE_ENV => (string) $this->queue()])->run($command, fn ($type, $output) => $this->output->write($output));
+        DeployWarmJob::dispatch($request, $config)
+            ->onConnection(config('statamic.static_caching.warm_queue_connection') ?? config('queue.default'))
+            ->onQueue($this->queue());
+    }
 
-        if ($result->failed()) {
-            throw new \RuntimeException('static:warm failed: '.$result->errorOutput());
-        }
+    /** Guzzle options of the warm requests (the CDN bypass is added by WarmJob itself). */
+    protected function clientConfig(): array
+    {
+        return ['verify' => ! $this->insecure(), 'timeout' => 300];
     }
 
     /** @return list<string> the root of every language (or site) */
@@ -197,7 +198,14 @@ class Warm extends Command
     {
         return collect($this->homePaths())->flatMap(function ($home) {
             try {
-                $response = Http::withOptions(['verify' => ! $this->insecure()])->timeout(300)->get(URL::makeAbsolute($home));
+                $url = URL::makeAbsolute($home);
+                $options = $this->clientConfig();
+
+                if ($ip = Reps::config('static_caching.warm_ip')) {
+                    $options['curl'][CURLOPT_RESOLVE] = [WarmJob::resolve($url, $ip)];
+                }
+
+                $response = Http::withOptions($options)->get($url);
             } catch (Throwable $e) {
                 $this->warn("$home: ".$e->getMessage());
 
@@ -229,15 +237,15 @@ class Warm extends Command
         return $links;
     }
 
-    /** Published artists in every language (or site). */
-    protected function artistPaths(): Collection
+    /** The published entries of a collection with a page (artists, categories), in every language (or site). */
+    protected function entryPaths(string $collection): Collection
     {
-        $artists = Entry::query()->where('collection', 'artists')->where('published', true)->get();
+        $entries = Entry::query()->where('collection', $collection)->where('published', true)->get();
 
-        return $artists->flatMap(function ($artist) {
+        return $entries->flatMap(function ($entry) {
             $urls = SimpleTranslations::enabled()
-                ? collect(Languages::codes())->map(fn ($code) => Languages::in($code, fn () => $artist->url()))
-                : collect([$artist->url()]);
+                ? collect(Languages::codes())->map(fn ($code) => Languages::in($code, fn () => $entry->url()))
+                : collect([$entry->url()]);
 
             return $urls->map(fn ($url) => $this->path($url));
         })->filter()->values();

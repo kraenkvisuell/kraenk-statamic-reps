@@ -146,28 +146,27 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   cache store of its own (`asset_meta` in `config/cache.php`), which `cache:clear` – run by composer's
   `statamic:install` on every install – leaves alone. `reps:warm-asset-meta` loads all metadata in
   parallel (about 5 minutes for 15,000 assets; seconds when everything is cached), in the deploy
-  script before `static:warm`. Metadata edited in another environment (the bucket is shared) stays
+  script before `reps:warm`. Metadata edited in another environment (the bucket is shared) stays
   cached until `php artisan cache:clear asset_meta`.
-- **Static cache warming in tiers:** `reps:warm [--queue] [--insecure] [--uncached] [--dry-run]` runs
-  Statamic's `static:warm` once per tier, so the pages visitors see first are cached first: the home
-  page(s), every internal link in the home page's `<nav>` elements (the menu, whatever builds it),
-  the published artists, then everything else (`--exclude` of the earlier tiers). Every language
-  (simple translations) or site. Queued, Horizon renders the tiers in that order. Use it in the
-  deploy script instead of `static:warm --queue`. With `--queue` it first clears the warm queue
-  (`static_caching.warm_queue`, give it a queue of its own, e.g. `warm`): jobs still waiting from
-  an earlier run (a deploy shortly after another) would otherwise go before this run's tiers.
-  Statamic's warm jobs are unique per URL and `queue:clear` leaves their locks behind, so it
-  releases the locks of the jobs it drops; without that, the new run's jobs for the same URLs
-  would be dropped silently.
-- **Deploy runs on their own queue:** with `static_caching.warm_queue` set in the addon config
-  (e.g. `warm`), `reps:warm` queues its runs there, with its own job (`DeployWarmJob`, so a
-  waiting deploy job doesn't swallow a save's re-cache of the same URL), and Statamic's
-  `warm_queue` (e.g. `recache`) only carries the re-caching after saves. Let Horizon take the
-  queues in order without balancing (`'queue' => ['recache', 'default', 'warm']`,
-  `'balance' => false`): saves show up within seconds even during a long deploy run.
-- **Slide pages in the static cache:** the `slideshow_index_segment` route (`/…/<slideshow>/<n>`)
-  runs through `statamic.web`, so these pages are cached like Statamic's own; static:warm doesn't
-  list them, so the addon adds the cached ones to every warm run (`StaticWarm` hook `additional`).
+- **Re-caching the site:** `reps:warm [--queue] [--insecure] [--dry-run]` clears the static cache
+  and warms only the pages visitors see first, in this order: the home page(s), every internal link
+  in the home page's `<nav>` elements (the menu, whatever builds it), the published artists and
+  categories. Every
+  language (simple translations) or site. Everything else is cached on its first visit. Deploys run
+  it, and so should a site's invalidator wherever a save changes every page (menus, globals …),
+  instead of re-caching thousands of pages. Queued, Horizon renders the pages in that order. With
+  `--queue` it first clears its queue (`static_caching.warm_queue`, give it a queue of its own,
+  e.g. `warm`) and releases the unique locks of the jobs it drops (`queue:clear` leaves them
+  behind; the new run's jobs for the same URLs would be dropped silently).
+- **Own queue and job:** with `static_caching.warm_queue` set (e.g. `warm`), `reps:warm` queues
+  there, with its own job (`DeployWarmJob`, so a waiting run doesn't swallow a save's re-cache of
+  the same URL), and Statamic's `warm_queue` (e.g. `recache`) only carries the re-caching of single
+  pages after saves. Let Horizon take the queues in order without balancing
+  (`'queue' => ['recache', 'default', 'warm']`, `'balance' => false`).
+- **Warm requests past the CDN:** with `static_caching.warm_ip` (`REPS_WARM_IP=127.0.0.1`) every warm
+  request (reps:warm, Statamic's re-caching) connects to the server itself instead of the domain's
+  DNS. Behind a CDN that ignores query strings in its cache key (Bunny), the re-cache request
+  (`?__recache=…`) would get the CDN's old copy and the page would never be rendered again.
 - **Warm job with an expiring lock:** the addon sets `static_caching.warm_job` (when the site leaves
   it empty) to `StaticCaching\WarmJob`, Statamic's job with a one-hour unique lock. Statamic's
   lock never expires: a warm job removed from the queue without running blocked its URL for good.

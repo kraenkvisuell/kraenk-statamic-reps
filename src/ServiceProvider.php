@@ -9,7 +9,6 @@ use Kraenkvisuell\StatamicReps\Listeners\AdjustBlueprints;
 use Kraenkvisuell\StatamicReps\Listeners\SyncRelations;
 use Kraenkvisuell\StatamicReps\Support\GlobalBlueprints;
 use Statamic\Contracts\Imaging\ImageManipulator;
-use Statamic\Console\Commands\StaticWarm;
 use Statamic\Contracts\Imaging\UrlBuilder;
 use Statamic\Events\EntryBlueprintFound;
 use Statamic\Events\EntrySaved;
@@ -22,7 +21,6 @@ use Statamic\Facades\Blueprint;
 use Statamic\Facades\Collection;
 use Statamic\Facades\Entry;
 use Statamic\Providers\AddonServiceProvider;
-use Statamic\StaticCaching\Cacher;
 use Statamic\Statamic;
 
 class ServiceProvider extends AddonServiceProvider
@@ -83,27 +81,6 @@ class ServiceProvider extends AddonServiceProvider
         // warm jobs whose unique lock expires (see StaticCaching\WarmJob)
         if (! config('statamic.static_caching.warm_job')) {
             config(['statamic.static_caching.warm_job' => StaticCaching\WarmJob::class]);
-        }
-
-        // slide pages (/…/<slideshow>/<n>) aren't in static:warm's list; the ones visitors opened are
-        // cached, so warming re-renders those too (a deploy would leave them with the old markup)
-        if (Reps::config('slideshow_index_segment')) {
-            StaticWarm::hook('additional', function ($urls, $next) {
-                $cacher = app(Cacher::class);
-                $slides = method_exists($cacher, 'getUrls')
-                    ? $cacher->getUrls()->filter(fn ($url) => preg_match('#/\d+$#', (string) strtok($url, '?')))
-                    : collect();
-
-                return $next($urls->merge($slides->values()));
-            });
-        }
-
-        // a static:warm run started by reps:warm: its queue and job (see Console\Commands\Warm)
-        if (($queue = getenv(Commands\Warm::QUEUE_ENV)) !== false && $queue !== '') {
-            config([
-                'statamic.static_caching.warm_queue' => $queue,
-                'statamic.static_caching.warm_job' => StaticCaching\DeployWarmJob::class,
-            ]);
         }
 
         Event::listen(EntryBlueprintFound::class, AdjustBlueprints::class);
