@@ -21,7 +21,7 @@ tabs:
               localizable: false
               listable: false
   main:
-    display: Info
+    display: General
     sections:
       -
         fields:
