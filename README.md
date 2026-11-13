@@ -167,6 +167,13 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   request (reps:warm, Statamic's re-caching) connects to the server itself instead of the domain's
   DNS. Behind a CDN that ignores query strings in its cache key (Bunny), the re-cache request
   (`?__recache=…`) would get the CDN's old copy and the page would never be rendered again.
+- **CP thumbnails from the Glide CDN:** Statamic's `/cp/thumbnails/…` route is a PHP request per
+  image even when the thumbnail exists (boot, login check, streaming the file back from Bunny), and
+  the site's CDN doesn't cache it. Once the route has generated a thumbnail, its path is in Glide's
+  cache store, and the addon's asset class (`Imaging\CdnThumbnailAsset`, bound to the asset contract)
+  links the file on the Glide CDN instead, with `?v=<modified>` for the browser. Thumbnails not
+  generated yet still go through the route. Only when Glide serves its cache directly (a cache
+  disk with a URL); off with `cp.cdn_thumbnails`.
 - **Warm job with an expiring lock:** the addon sets `static_caching.warm_job` (when the site leaves
   it empty) to `StaticCaching\WarmJob`, Statamic's job with a one-hour unique lock. Statamic's
   lock never expires: a warm job removed from the queue without running blocked its URL for good.

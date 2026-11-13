@@ -89,6 +89,9 @@ return [
     'cp' => [
         'artist_portfolio_images' => 3,
         'slideshow_thumbnails' => 99,      // works shown per slideshow in the artist's slideshows field
+        // thumbnails from the Glide cache's CDN once generated, instead of a PHP request each
+        // (Imaging\CdnThumbnailAsset; only when Glide serves its cache directly, e.g. from Bunny)
+        'cdn_thumbnails' => true,
     ],
 
     /*

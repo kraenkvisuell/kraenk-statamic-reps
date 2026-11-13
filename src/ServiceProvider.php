@@ -8,6 +8,7 @@ use Kraenkvisuell\StatamicReps\Imaging\OriginalGifManipulator;
 use Kraenkvisuell\StatamicReps\Listeners\AdjustBlueprints;
 use Kraenkvisuell\StatamicReps\Listeners\SyncRelations;
 use Kraenkvisuell\StatamicReps\Support\GlobalBlueprints;
+use Statamic\Contracts\Assets\Asset;
 use Statamic\Contracts\Imaging\ImageManipulator;
 use Statamic\Contracts\Imaging\UrlBuilder;
 use Statamic\Events\EntryBlueprintFound;
@@ -82,6 +83,9 @@ class ServiceProvider extends AddonServiceProvider
         if (! config('statamic.static_caching.warm_job')) {
             config(['statamic.static_caching.warm_job' => StaticCaching\WarmJob::class]);
         }
+
+        // CP thumbnails from the Glide CDN once generated (see Imaging\CdnThumbnailAsset)
+        $this->app->bind(Asset::class, Imaging\CdnThumbnailAsset::class);
 
         Event::listen(EntryBlueprintFound::class, AdjustBlueprints::class);
         Event::listen(EntrySaved::class, SyncRelations::class);

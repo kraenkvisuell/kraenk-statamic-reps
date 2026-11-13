@@ -6,6 +6,7 @@ use Kraenkvisuell\StatamicReps\Portfolio;
 use Kraenkvisuell\StatamicReps\Reps;
 use Statamic\Contracts\Entries\Entry as EntryContract;
 use Statamic\Facades\Asset;
+use Statamic\Facades\AssetContainer;
 use Statamic\Fieldtypes\Entries;
 
 /**
@@ -39,17 +40,22 @@ class Slideshows extends Entries
         $root = $slideshow->root();
         $works = collect($root->get('works', []))->filter(fn ($work) => $work['enabled'] ?? true)->values();
         $container = Reps::config('assets.container');
+        $assets = AssetContainer::find($container);
 
         $thumbnails = $works->pluck('file')->filter()
             ->take((int) Reps::config('cp.slideshow_thumbnails', 99))
-            ->map(function ($path) use ($container) {
+            ->map(function ($path) use ($container, $assets) {
                 $id = "$container::$path";
 
                 if (strtolower(pathinfo($path, PATHINFO_EXTENSION)) === 'mp4') {
                     return ['video' => Asset::find($id)?->url()];
                 }
 
-                return ['image' => cp_route('assets.thumbnails.show', ['encoded_asset' => base64_encode($id), 'size' => 'small'])];
+                // makeAsset: no lookup of the file, the thumbnail URL only needs the cached meta
+                // (Glide CDN once generated, see Imaging\CdnThumbnailAsset)
+                return ['image' => $assets
+                    ? $assets->makeAsset($path)->thumbnailUrl('small')
+                    : cp_route('assets.thumbnails.show', ['encoded_asset' => base64_encode($id), 'size' => 'small'])];
             })
             ->filter(fn ($thumbnail) => array_filter($thumbnail))
             ->values()->all();
