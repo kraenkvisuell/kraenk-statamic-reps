@@ -17,6 +17,8 @@ use Statamic\Events\EntrySaving;
 use Statamic\Events\GlobalVariablesBlueprintFound;
 use Statamic\Events\GlobalVariablesSaved;
 use Statamic\Events\GlobalVariablesSaving;
+use Statamic\Events\StaticCacheCleared;
+use Statamic\Events\UrlInvalidated;
 use Statamic\Facades\Blink;
 use Statamic\Facades\Blueprint;
 use Statamic\Facades\Collection;
@@ -83,6 +85,10 @@ class ServiceProvider extends AddonServiceProvider
         if (! config('statamic.static_caching.warm_job')) {
             config(['statamic.static_caching.warm_job' => StaticCaching\WarmJob::class]);
         }
+
+        // the Bunny pull zone in front of the site follows the static cache (see StaticCaching\BunnyPurge)
+        Event::listen(UrlInvalidated::class, fn (UrlInvalidated $event) => StaticCaching\BunnyPurge::url($event->url));
+        Event::listen(StaticCacheCleared::class, fn () => StaticCaching\BunnyPurge::all());
 
         // CP thumbnails from the Glide CDN once generated (see Imaging\CdnThumbnailAsset)
         $this->app->bind(Asset::class, Imaging\CdnThumbnailAsset::class);

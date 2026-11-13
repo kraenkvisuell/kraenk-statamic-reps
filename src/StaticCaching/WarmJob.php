@@ -19,6 +19,8 @@ use Statamic\Console\Commands\StaticWarmJob;
  * instead of the domain's DNS: behind a CDN that ignores query strings in its cache key, the
  * re-cache request (?__recache=…) would be answered with the CDN's old copy and never reach the
  * server.
+ *
+ * After the request, the URL is purged at Bunny (see BunnyPurge).
  */
 class WarmJob extends StaticWarmJob
 {
@@ -31,6 +33,9 @@ class WarmJob extends StaticWarmJob
         }
 
         parent::handle();
+
+        // the server has the new page now; the CDN in front of it must not keep the old one
+        BunnyPurge::url((string) $this->request->getUri());
     }
 
     /** curl's host:port:address entry for the URL. */

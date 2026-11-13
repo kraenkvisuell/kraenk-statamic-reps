@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Kraenkvisuell\StatamicReps\Reps;
+use Kraenkvisuell\StatamicReps\StaticCaching\BunnyPurge;
 use Kraenkvisuell\StatamicReps\StaticCaching\DeployWarmJob;
 use Kraenkvisuell\StatamicReps\StaticCaching\WarmJob;
 use Kraenkvisuell\StatamicReps\Translations\SimpleTranslations;
@@ -46,6 +47,11 @@ class Warm extends Command
         if (! $this->option('dry-run')) {
             $cacher->flush();
             $this->line('Static cache cleared.');
+
+            if (BunnyPurge::enabled()) {
+                BunnyPurge::all();
+                $this->line('Bunny pull zone purged.');
+            }
         }
 
         if ($this->option('queue') && ! $this->option('dry-run')) {

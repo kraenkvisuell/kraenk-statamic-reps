@@ -250,6 +250,13 @@ return [
         // 127.0.0.1): behind a CDN that ignores query strings, re-cache requests would otherwise
         // be answered with the CDN's old copy and never reach the server. null: the domain.
         'warm_ip' => env('REPS_WARM_IP'),
+        // The Bunny pull zone in front of the site: re-cached and invalidated pages are purged
+        // there right away, the whole zone when the static cache is cleared (StaticCaching\BunnyPurge).
+        // An account API key (Account settings → API key) and the pull zone's id. Empty: off.
+        'bunny' => [
+            'api_key' => env('BUNNY_API_KEY'),
+            'pull_zone' => env('BUNNY_PULL_ZONE_ID'),
+        ],
     ],
 
     /*
