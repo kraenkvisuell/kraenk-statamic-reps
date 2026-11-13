@@ -30,7 +30,7 @@ use Throwable;
 /**
  * Re-caches the site: clears the static cache, then warms the pages visitors see first, in this
  * order: the home page(s), every page linked in the menu (the home page's <nav> elements, so it
- * follows the menu whatever builds it), the artists, the categories. Every language (simple translations' /de,
+ * follows the menu whatever builds it), the artists, the categories, the special projects. Every language (simple translations' /de,
  * /en, or every site). Everything else is cached on its first visit.
  *
  * Deploys run it, and a save that changes every page (menus, globals …) should too, instead of
@@ -39,7 +39,7 @@ use Throwable;
  * dropped first (see clearQueue()). Without --queue the pages are requested right away.
  */
 #[Signature('reps:warm {--queue : Queue the requests (Horizon renders them in this order)} {--insecure : Skip SSL verification} {--dry-run : Only list the pages, clear nothing}')]
-#[Description('Clear the static cache and warm the home page, the menu pages, the artists and the categories')]
+#[Description('Clear the static cache and warm the home page, the menu pages, the artists, the categories and the special projects')]
 class Warm extends Command
 {
     public function handle(Cacher $cacher): int
@@ -63,6 +63,7 @@ class Warm extends Command
             'menu' => fn () => $this->menuPaths(),
             'artists' => fn () => $this->entryPaths('artists'),
             'categories' => fn () => $this->entryPaths('categories'),
+            'special projects' => fn () => $this->entryPaths('special_projects'),
         ]);
 
         $done = collect();

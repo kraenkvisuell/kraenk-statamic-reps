@@ -150,8 +150,8 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   cached until `php artisan cache:clear asset_meta`.
 - **Re-caching the site:** `reps:warm [--queue] [--insecure] [--dry-run]` clears the static cache
   and warms only the pages visitors see first, in this order: the home page(s), every internal link
-  in the home page's `<nav>` elements (the menu, whatever builds it), the published artists and
-  categories. Every
+  in the home page's `<nav>` elements (the menu, whatever builds it), the published artists,
+  categories and special projects. Every
   language (simple translations) or site. Everything else is cached on its first visit. Deploys run
   it, and so should a site's invalidator wherever a save changes every page (menus, globals …),
   instead of re-caching thousands of pages. Queued, Horizon renders the pages in that order. With
