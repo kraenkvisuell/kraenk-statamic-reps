@@ -18,6 +18,17 @@ slideshow in a stack) and actions: edit, publish/unpublish, hide in / show in th
 (feature `overview`); no unlink, a slideshow always belongs to its artist (only a slideshow that no longer exists can be unlinked). The actions save the slideshow right away
 (`Http\Controllers\Cp\SlideshowItemController`); the order is saved with the artist. The row is
 `reps-slideshow-item` in `resources/js/cp.js`, which extends Statamic's own relationship row.
+
+## Slideshows tab of a category
+
+With the feature `category_slideshow_order` (off by default; on at kombinatrotweiss) a category has a
+"Slideshows" tab after the main tab, like the old Nova list: the slideshows its page shows (with
+`represents_in_categories` only those with a work chosen to represent the artist in the category,
+like Nova's `category_slideshows_are_filtered`), titled "Artist / Slideshow", with the artist's rows.
+Only the order is edited there (no link, create or unlink: a slideshow's categories are set in the
+slideshow); it's saved as the category's `slideshow_order`, which `Portfolio::categorySlideshows`
+follows (the others newest first). `Fieldtypes\CategorySlideshows`, `reps_category_slideshows-fieldtype`
+in `resources/js/cp.js`.
 ## Works of a slideshow
 
 The collapsed work rows show what the old Nova list showed: the file as a large preview (videos

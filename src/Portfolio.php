@@ -196,19 +196,25 @@ class Portfolio
     {
         $category = $category->root();
 
-        return Blink::once('reps-category-slideshows-'.$category->id().'-'.static::site(), function () use ($category) {
-            $order = array_flip(static::ids($category, 'slideshow_order'));
+        return Blink::once('reps-category-slideshows-'.$category->id().'-'.static::site(), fn () => static::orderedCategorySlideshows($category->id(), static::ids($category, 'slideshow_order'))
+            ->map(fn ($s) => static::local($s))->filter(fn ($s) => $s && $s->published())->values());
+    }
 
-            $origins = Entry::query()
-                ->where('collection', 'slideshows')
-                ->where('site', Site::default()->handle())
-                ->whereJsonContains('categories', $category->id())
-                ->get()
-                ->sortBy(fn ($s) => [isset($order[$s->id()]) ? 0 : 1, $order[$s->id()] ?? -($s->date()?->timestamp ?? 0)])
-                ->values();
+    /**
+     * Every slideshow (origin, published or not) in a category, in the given order (slideshow_order)
+     * and the others newest first. Also the rows of the category's slideshows field in the CP.
+     */
+    public static function orderedCategorySlideshows(string $categoryId, array $order): Collection
+    {
+        $order = array_flip(array_values(array_filter($order, 'is_string')));
 
-            return $origins->map(fn ($s) => static::local($s))->filter(fn ($s) => $s && $s->published())->values();
-        });
+        return Entry::query()
+            ->where('collection', 'slideshows')
+            ->where('site', Site::default()->handle())
+            ->whereJsonContains('categories', $categoryId)
+            ->get()
+            ->sortBy(fn ($s) => [isset($order[$s->id()]) ? 0 : 1, $order[$s->id()] ?? -($s->date()?->timestamp ?? 0)])
+            ->values();
     }
 
     /**

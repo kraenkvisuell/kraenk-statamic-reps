@@ -164,6 +164,35 @@ Statamic.booted(() => {
     });
 });
 
+// The category's slideshows (Fieldtypes\CategorySlideshows): Statamic's relationship field with the
+// artist's rows, but only sortable – no link/create buttons, no "Unlink all" (which categories a
+// slideshow is in is set in the slideshow). The local `RelationshipInput` replaces the global one
+// in the inherited render function.
+Statamic.booted(() => {
+    const Fieldtype = Statamic.$app.component('relationship-fieldtype');
+    const Input = Statamic.$app.component('relationship-input');
+
+    if (!Fieldtype || !Input) {
+        return;
+    }
+
+    const SortOnlyInput = {
+        extends: Input,
+        computed: {
+            canSelectOrCreate: () => false,
+        },
+    };
+
+    Statamic.$app.component('reps_category_slideshows-fieldtype', {
+        extends: Fieldtype,
+        components: { RelationshipInput: SortOnlyInput },
+        computed: {
+            canCreate: () => false,
+            internalFieldActions: () => [],
+        },
+    });
+});
+
 // Multi-site with translatable fields (Translations\Translations): every language is edited in the
 // default site's form, so the "Working in" panel of entries and the site dropdown of the globals
 // (switching to the other site's entry) are hidden.

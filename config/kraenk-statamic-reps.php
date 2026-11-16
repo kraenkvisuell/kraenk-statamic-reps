@@ -27,6 +27,7 @@ return [
         'artist_testimonials' => false,
         'artist_skills' => false,          // skill headline/text/images on artists (krw)
         'artist_categories_order' => false, // artists order their categories (visualeyes)
+        'category_slideshow_order' => false, // the category's slideshows, sortable in its form (krw)
         'portfolio_images' => false,       // works flagged as portfolio/megamenu images
         'startpage_images' => false,       // works flagged as start page images
         'discipline_images' => false,      // works flagged as discipline images

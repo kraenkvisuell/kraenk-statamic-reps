@@ -10,6 +10,23 @@ tabs:
           - { handle: main_image, field: { type: assets, display: Image, container: main, max_files: 1 } }
           - { handle: show_in_home_navi, field: { type: toggle, display: 'Show in home navigation', width: 50 } }
           - { handle: show_in_main_menu, field: { type: toggle, display: 'Show in main menu', width: 50 } }
+  slideshows:
+    display: Slideshows
+    sections:
+      -
+        fields:
+          - handle: slideshow_order
+            field:
+              type: reps_category_slideshows
+              display: Slideshows
+              hide_display: true
+              instructions: 'In the order shown on the category page. Slideshows are added to a category in the slideshow.'
+              collections: [slideshows]
+              create: false
+              mode: default
+              reps_feature: category_slideshow_order
+              localizable: false
+              listable: false
   seo:
     display: SEO
     sections:
