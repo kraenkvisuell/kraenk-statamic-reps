@@ -5,13 +5,15 @@ namespace Kraenkvisuell\StatamicReps\Fieldtypes;
 use Kraenkvisuell\StatamicReps\Portfolio;
 use Kraenkvisuell\StatamicReps\Reps;
 use Statamic\Contracts\Entries\Entry as EntryContract;
+use Statamic\Fieldtypes\Entries;
 
 /**
  * The slideshows of a category, in the order of the category page (`slideshow_order`), like the
  * old Nova list: the slideshows the category page shows are listed, only the order is edited here. Which
  * categories a slideshow is in is set in the slideshow. Rows as in the artist's slideshows field,
- * titled "Artist / Slideshow"; `reps_category_slideshows-fieldtype` in resources/js/cp.js has no
- * link, create or unlink buttons.
+ * titled "Artist / Slideshow", with the works the category page shows and no badges or actions
+ * besides editing (see Slideshows::details); `reps_category_slideshows-fieldtype` in
+ * resources/js/cp.js has no link, create or unlink buttons.
  */
 class CategorySlideshows extends Slideshows
 {
@@ -49,13 +51,18 @@ class CategorySlideshows extends Slideshows
 
     protected function toItemArray($id)
     {
-        $item = parent::toItemArray($id);
+        // Statamic's row (not Slideshows'): the details follow with the category
+        $item = Entries::toItemArray($id);
 
-        if (! ($item['invalid'] ?? false) && ($slideshow = $this->findEntry($id))) {
-            $artist = Portfolio::artist($slideshow->root()->get('artist'));
-            $item['title'] = $artist ? $artist->root()->get('title').' / '.$item['title'] : $item['title'];
+        if (($item['invalid'] ?? false) || ! $slideshow = $this->findEntry($id)) {
+            return $item;
         }
 
-        return $item;
+        $artist = Portfolio::artist($slideshow->root()->get('artist'));
+        $item['title'] = $artist ? $artist->root()->get('title').' / '.$item['title'] : $item['title'];
+
+        $category = $this->field?->parent();
+
+        return array_merge($item, static::details($slideshow, $category instanceof EntryContract ? $category->root()->id() : null));
     }
 }

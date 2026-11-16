@@ -10,11 +10,12 @@ use Statamic\Http\Controllers\CP\CpController;
 /** Row data and actions of the artist's slideshows field (Fieldtypes\Slideshows). */
 class SlideshowItemController extends CpController
 {
-    public function show(string $id)
+    /** `?category=<id>`: the row of the category's slideshows field. */
+    public function show(Request $request, string $id)
     {
         $slideshow = $this->slideshow($id, 'view');
 
-        return Slideshows::details($slideshow);
+        return Slideshows::details($slideshow, $request->query('category') ?: null);
     }
 
     /** Toggles `published` or `visible_in_overview` and saves the slideshow right away (like the Nova actions). */

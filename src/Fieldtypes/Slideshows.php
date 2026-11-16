@@ -34,15 +34,23 @@ class Slideshows extends Entries
         return array_merge($item, static::details($entry));
     }
 
-    /** The extra data of a row (also returned by the actions to refresh it). */
-    public static function details(EntryContract $slideshow): array
+    /**
+     * The extra data of a row (also returned by the actions to refresh it). With a category (the
+     * category's slideshows field): only the works its page shows as thumbnails, and the row has
+     * no badges and no actions besides editing (`category` in the row data).
+     */
+    public static function details(EntryContract $slideshow, ?string $categoryId = null): array
     {
         $root = $slideshow->root();
         $works = collect($root->get('works', []))->filter(fn ($work) => $work['enabled'] ?? true)->values();
         $container = Reps::config('assets.container');
         $assets = AssetContainer::find($container);
 
-        $thumbnails = $works->pluck('file')->filter()
+        $shown = $categoryId
+            ? $works->filter(fn ($work) => in_array($categoryId, (array) ($work['represents_in'] ?? []), true))
+            : $works;
+
+        $thumbnails = $shown->pluck('file')->filter()
             ->take((int) Reps::config('cp.slideshow_thumbnails', 99))
             ->map(function ($path) use ($container, $assets) {
                 $id = "$container::$path";
@@ -65,13 +73,14 @@ class Slideshows extends Entries
 
         return [
             'reps' => [
-                'categories' => $categories,
+                'category' => $categoryId,
+                'categories' => $categoryId ? [] : $categories,
                 'thumbnails' => $thumbnails,
                 'works' => $works->count(),
                 'works_label' => Reps::label($works->count() === 1 ? 'work' : 'works'),
                 'published' => $slideshow->published(),
                 // null where the site has no artist overview
-                'visible_in_overview' => Reps::feature('overview') ? $root->get('is_visible_in_overview', true) !== false : null,
+                'visible_in_overview' => Reps::feature('overview') && ! $categoryId ? $root->get('is_visible_in_overview', true) !== false : null,
                 'overview_label' => 'Show in the artist overview',
             ],
         ];

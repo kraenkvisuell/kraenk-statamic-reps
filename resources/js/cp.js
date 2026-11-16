@@ -80,7 +80,8 @@ Statamic.booted(() => {
             // after editing in the stack: categories and works may have changed too
             itemUpdated(data) {
                 Base.methods.itemUpdated.call(this, data);
-                this.$axios.get(url(this.item.id)).then(({ data }) => (this.item.reps = data.reps));
+                const params = this.reps.category ? { category: this.reps.category } : {};
+                this.$axios.get(url(this.item.id), { params }).then(({ data }) => (this.item.reps = data.reps));
             },
         },
 
@@ -94,7 +95,10 @@ Statamic.booted(() => {
                 ? h('a', { href: item.edit_url, class: 'font-medium text-gray-800 dark:text-gray-200', onClick: (e) => { e.preventDefault(); this.edit(); } }, item.title)
                 : h('div', { class: 'font-medium' }, valid ? item.title : __('messages.relationship_item_unavailable'));
 
-            const badges = [
+            // in a category's slideshows field: no badges, only "Edit" (see Fieldtypes\CategorySlideshows)
+            const inCategory = !!reps.category;
+
+            const badges = inCategory ? [] : [
                 ...(reps.categories || []).map((category) => ui('badge', { size: 'sm', text: category })),
                 valid && reps.published === false ? ui('badge', { size: 'sm', color: 'red', text: __('Draft') }) : null,
                 reps.visible_in_overview === false ? ui('badge', { size: 'sm', color: 'red', text: __('Hidden in the artist overview') }) : null,
@@ -123,8 +127,8 @@ Statamic.booted(() => {
                 trigger: () => h(Button, { icon: 'dots', variant: 'ghost', size: 'xs', 'aria-label': __('Open dropdown menu') }),
                 default: () => h(DropdownMenu, null, () => [
                     this.editable && valid ? h(DropdownItem, { text: __('Edit'), onClick: () => this.edit() }) : null,
-                    this.editable && valid ? h(DropdownItem, { text: reps.published ? __('Unpublish') : __('Publish'), onClick: () => this.toggle('published') }) : null,
-                    this.editable && valid && reps.visible_in_overview !== null && reps.visible_in_overview !== undefined
+                    this.editable && valid && !inCategory ? h(DropdownItem, { text: reps.published ? __('Unpublish') : __('Publish'), onClick: () => this.toggle('published') }) : null,
+                    this.editable && valid && !inCategory && reps.visible_in_overview !== null && reps.visible_in_overview !== undefined
                         ? h(DropdownItem, { text: __(reps.visible_in_overview ? 'Hide in the artist overview' : 'Show in the artist overview again'), onClick: () => this.toggle('visible_in_overview') })
                         : null,
                     // only to clean up a slideshow that no longer exists

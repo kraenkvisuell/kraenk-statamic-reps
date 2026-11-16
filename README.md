@@ -24,7 +24,8 @@ slideshow in a stack) and actions: edit, publish/unpublish, hide in / show in th
 With the feature `category_slideshow_order` (off by default; on at kombinatrotweiss) a category has a
 "Slideshows" tab after the main tab, like the old Nova list: the slideshows its page shows (with
 `represents_in_categories` only those with a work chosen to represent the artist in the category,
-like Nova's `category_slideshows_are_filtered`), titled "Artist / Slideshow", with the artist's rows.
+like Nova's `category_slideshows_are_filtered`), titled "Artist / Slideshow", with the artist's rows
+but only the works the category page shows as thumbnails, no badges and only "Edit" as action.
 Only the order is edited there (no link, create or unlink: a slideshow's categories are set in the
 slideshow); it's saved as the category's `slideshow_order`, which `Portfolio::categorySlideshows`
 follows (the others newest first). `Fieldtypes\CategorySlideshows`, `reps_category_slideshows-fieldtype`
