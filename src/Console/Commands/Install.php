@@ -5,6 +5,7 @@ namespace Kraenkvisuell\StatamicReps\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Kraenkvisuell\StatamicReps\Reps;
+use Kraenkvisuell\StatamicReps\Translations\SimpleTranslations;
 use Statamic\Facades\Site;
 use Statamic\Facades\YAML;
 
@@ -56,6 +57,12 @@ class Install extends Command
     protected function collection(string $handle): void
     {
         $route = Reps::config("routes.$handle");
+
+        // simple translations: the language comes from the URL, every route starts with it
+        if ($route && SimpleTranslations::enabled() && ! str_starts_with($route, '/{language}')) {
+            $route = '/{language}'.$route;
+        }
+
         $data = [
             'title' => Reps::config("labels.$handle", ucwords(str_replace('_', ' ', $handle))),
             'template' => "$handle/show",
@@ -63,8 +70,12 @@ class Install extends Command
             'revisions' => false,
             'route' => $route,
             'sites' => $this->sites(),
-            'propagate' => count($this->sites()) > 1,
         ];
+
+        // only means something with several sites; a single site keeps what it has
+        if (count($this->sites()) > 1) {
+            $data['propagate'] = true;
+        }
 
         if (isset(static::ORDERED[$handle])) {
             $data['structure'] = ['max_depth' => static::ORDERED[$handle]];
@@ -74,6 +85,8 @@ class Install extends Command
             $data['date'] = true;
             $data['sort_dir'] = 'desc';
             $data['date_behavior'] = ['past' => 'public', 'future' => 'public'];
+            // new slideshows (also from the artist's "Add slideshow" buttons) start as drafts
+            $data['default_status'] = 'draft';
         }
 
         $this->write("content/collections/$handle.yaml", $data, keepExisting: ['title']);

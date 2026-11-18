@@ -168,6 +168,69 @@ Statamic.booted(() => {
     });
 });
 
+// The artist's slideshows field (Fieldtypes\Slideshows): Statamic's relationship field with an
+// "Add slideshow" button (label from the field's meta) on the right above the list (adds at position
+// 1) and below it (adds at the end), and no "Link" button – a slideshow always belongs to its
+// artist. The local `RelationshipInput`
+// replaces the global one in the inherited render function; Statamic's own button row is hidden
+// (canSelectOrCreate) and the inherited render is wrapped. `$parent` is the fieldtype.
+Statamic.booted(() => {
+    const Fieldtype = Statamic.$app.component('relationship-fieldtype');
+    const Input = Statamic.$app.component('relationship-input');
+    const CreateButton = Input?.components?.CreateButton;
+
+    if (!Fieldtype || !Input || !CreateButton) {
+        return;
+    }
+
+    const h = Vue.h;
+
+    const SlideshowsInput = {
+        extends: Input,
+        computed: {
+            canSelectOrCreate: () => false,
+            canAdd() {
+                return !this.readOnly && !this.maxItemsReached && this.canCreate && this.creatables.length > 0;
+            },
+        },
+        methods: {
+            // the top button adds the new slideshow at position 1, the bottom one at the end
+            itemCreatedFirst(item) {
+                if (this.readOnly) return;
+                this.$emit('item-data-updated', [...this.data, item]);
+                this.update([item.id, ...(this.value || [])]);
+            },
+            addButton(key) {
+                return h('div', { key, class: 'flex justify-end' }, h(CreateButton, {
+                    creatables: this.creatables,
+                    component: this.formComponent,
+                    componentProps: this.formComponentProps,
+                    icon: this.icon,
+                    text: __('Add :label', { label: __(this.$parent?.meta?.reps_label || 'Slideshow') }),
+                    site: this.site,
+                    stackSize: this.formStackSize,
+                    onCreated: (item) => (key === 'top' ? this.itemCreatedFirst(item) : this.itemCreated(item)),
+                }));
+            },
+        },
+        render(...args) {
+            const list = Input.render.apply(this, args);
+            const ready = !this.initializing && this.canAdd;
+
+            return h('div', { class: 'flex flex-col gap-3' }, [
+                ready && this.items.length ? this.addButton('top') : null,
+                list,
+                ready ? this.addButton('bottom') : null,
+            ]);
+        },
+    };
+
+    Statamic.$app.component('reps_slideshows-fieldtype', {
+        extends: Fieldtype,
+        components: { RelationshipInput: SlideshowsInput },
+    });
+});
+
 // The category's slideshows (Fieldtypes\CategorySlideshows): Statamic's relationship field with the
 // artist's rows, but only sortable – no link/create buttons, no "Unlink all" (which categories a
 // slideshow is in is set in the slideshow). The local `RelationshipInput` replaces the global one

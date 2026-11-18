@@ -13,7 +13,8 @@ use Statamic\Fieldtypes\Entries;
  * The artist's slideshows, with rows like the old Nova list: categories under the title, the
  * works' thumbnails, the number of works, a position dropdown and actions (publish, show in the
  * overview). The row is `reps-slideshow-item` in resources/js/cp.js; the actions post to
- * Http\Controllers\Cp\SlideshowItemController.
+ * Http\Controllers\Cp\SlideshowItemController. The field is `reps_slideshows-fieldtype` there: an
+ * "Add slideshow" button above and below the list, no "Link" button (a slideshow belongs to its artist).
  */
 class Slideshows extends Entries
 {
@@ -21,7 +22,17 @@ class Slideshows extends Entries
 
     protected $selectable = false;
 
+    protected $component = 'reps_slideshows';
+
     protected $itemComponent = 'reps-slideshow-item';
+
+    public function preload()
+    {
+        return array_merge(parent::preload(), [
+            // translated in cp.js ("Add :label"): the CP's JS has the addon's lang/de.json
+            'reps_label' => Reps::label('slideshow'),
+        ]);
+    }
 
     protected function toItemArray($id)
     {

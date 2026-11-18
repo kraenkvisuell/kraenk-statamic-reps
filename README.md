@@ -15,7 +15,10 @@ The artist's `slideshows` field is a `reps_slideshows` field (an entries field, 
 with rows like the old Nova list: a position dropdown (plus drag), the categories under the title,
 the works' thumbnails (`cp.slideshow_thumbnails`, videos play muted), the number of works (opens the
 slideshow in a stack) and actions: edit, publish/unpublish, hide in / show in the artist overview
-(feature `overview`); no unlink, a slideshow always belongs to its artist (only a slideshow that no longer exists can be unlinked). The actions save the slideshow right away
+(feature `overview`); no unlink, a slideshow always belongs to its artist (only a slideshow that no longer exists can be unlinked). Instead of Statamic's
+"Create"/"Link" buttons it has an "Add slideshow" button (the `labels.slideshow` label) on the right
+above the list (adds the new slideshow at position 1) and below it (adds it at the end); new
+slideshows start as drafts (`default_status: draft`, written by `reps:install`). The actions save the slideshow right away
 (`Http\Controllers\Cp\SlideshowItemController`); the order is saved with the artist. The row is
 `reps-slideshow-item` in `resources/js/cp.js`, which extends Statamic's own relationship row.
 
