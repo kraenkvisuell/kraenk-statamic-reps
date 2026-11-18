@@ -181,6 +181,7 @@ class ServiceProvider extends AddonServiceProvider
         Collection::computed('special_projects', 'special_category_slug', $parentSlug('special_category'));
         Collection::computed('artists', 'discipline_slug', $parentSlug('disciplines'));
         Cp\ArtistListing::register();
+        Cp\PositionColumn::register();
 
         Collection::computed('categories', 'route_segment', fn ($entry) => Reps::config('category_route_segments.'.$entry->root()->slug())
             ?? Reps::config('category_route_segment', 'category'));

@@ -64,6 +64,15 @@ unchanged. `Translations\Listener` writes the other languages to the localizatio
 is saved from the CP (an emptied field falls back to German); saves without these values (the
 import) pass untouched.
 
+## Position column in CP listings
+
+Collections listed in `cp.position_columns` (orderable ones, e.g. `['artists', 'categories']`) get a
+position select as the first column of their CP listing (`Cp\PositionColumn`, a computed
+`reps_position` field added to the blueprint, the index component in `resources/js/cp.js`).
+Picking a position moves the entry there right away (`POST cp/reps/position/{id}`, needs the
+"reorder" permission) and reloads the listing. The order is saved through the collection's
+tree like a drag in the CP, so static caching invalidates as for any reorder.
+
 ## Simple translations (one site, kombinatrotweiss)
 
 With [bastihilger/simple-statamic-translations](https://github.com/bastihilger/simple-statamic-translations)

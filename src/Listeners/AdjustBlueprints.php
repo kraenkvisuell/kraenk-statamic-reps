@@ -3,6 +3,7 @@
 namespace Kraenkvisuell\StatamicReps\Listeners;
 
 use Bastihilger\SimpleStatamicTranslations\Listeners\AdjustBlueprint;
+use Kraenkvisuell\StatamicReps\Cp\PositionColumn;
 use Kraenkvisuell\StatamicReps\Reps;
 use Kraenkvisuell\StatamicReps\Translations\SimpleTranslations;
 use Kraenkvisuell\StatamicReps\Translations\Translations;
@@ -25,7 +26,14 @@ class AdjustBlueprints
             return;
         }
 
-        $blueprint->setContents(static::adjust($blueprint->contents(), $blueprint->handle()));
+        $contents = static::adjust($blueprint->contents(), $blueprint->handle());
+
+        // the position select is the listing's first column (Cp\PositionColumn)
+        if (in_array($collection, PositionColumn::collections(), true) && $tab = array_key_first($contents['tabs'] ?? [])) {
+            array_unshift($contents['tabs'][$tab]['sections'][0]['fields'], PositionColumn::field());
+        }
+
+        $blueprint->setContents($contents);
 
         // the translated fields exist only now; simple-statamic-translations' own listener may
         // have run before this one (language switch, title/slug in the current language)

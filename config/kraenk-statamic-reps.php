@@ -93,6 +93,8 @@ return [
         // thumbnails from the Glide cache's CDN once generated, instead of a PHP request each
         // (Imaging\CdnThumbnailAsset; only when Glide serves its cache directly, e.g. from Bunny)
         'cdn_thumbnails' => true,
+        // orderable collections whose CP listing starts with a position select (Cp\PositionColumn)
+        'position_columns' => [],
     ],
 
     /*

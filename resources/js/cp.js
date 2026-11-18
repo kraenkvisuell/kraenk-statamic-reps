@@ -29,6 +29,40 @@ Statamic.booting(() => {
     });
 });
 
+// Position select of a CP listing (Cp\PositionColumn, `cp.position_columns`): [position, total,
+// url]; changing it moves the entry right away, then the listing reloads (Statamic's listing
+// provides `refresh` as "ListingContext").
+Statamic.booting(() => {
+    Statamic.$components.register('reps_position-fieldtype-index', {
+        props: ['value', 'values', 'handle'],
+        inject: { listing: { from: 'ListingContext', default: null } },
+        data: () => ({ saving: false }),
+        methods: {
+            move(position) {
+                if (position === this.value.position) return;
+                this.saving = true;
+                this.$axios
+                    .post(this.value.url, { position })
+                    .then(() => (this.listing?.refresh ? this.listing.refresh() : location.reload()))
+                    .catch(() => this.$toast.error(__('Something went wrong')))
+                    .finally(() => (this.saving = false));
+            },
+        },
+        render() {
+            if (!this.value) return null;
+
+            return Vue.h('div', { style: 'width:4.5rem', onClick: (event) => event.stopPropagation() }, Vue.h(Vue.resolveComponent('ui-select'), {
+                size: 'xs',
+                modelValue: this.value.position,
+                disabled: this.saving,
+                options: Array.from({ length: this.value.total }, (_, i) => ({ label: String(i + 1), value: i + 1 })),
+                'aria-label': __('Position'),
+                'onUpdate:modelValue': (position) => this.move(position),
+            }));
+        },
+    });
+});
+
 // Rows of the artist's slideshows field (Fieldtypes\Slideshows), like the old Nova list: position
 // dropdown, title with categories, the works' thumbnails, number of works, actions (no unlink: a
 // slideshow always belongs to its artist). Built from Statamic's UI components (ui.statamic.dev);
