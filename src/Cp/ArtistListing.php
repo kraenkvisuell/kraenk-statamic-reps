@@ -22,6 +22,7 @@ class ArtistListing
             'reps_copy_links' => fn (Entry $artist) => static::copyLinks($artist),
             'reps_portfolio_images' => fn (Entry $artist) => static::portfolioImages($artist),
             'reps_startpage_images' => fn (Entry $artist) => static::flaggedFiles($artist, 'is_startpage_image'),
+            'reps_bgcolor' => fn (Entry $artist) => static::bgcolor($artist),
         ];
 
         foreach ($columns as $handle => $callback) {
@@ -39,6 +40,20 @@ class ArtistListing
         }
 
         return $html;
+    }
+
+    /** The artist's colour as a swatch with its hex code (feature artist_bgcolor), like the Nova index. */
+    public static function bgcolor(Entry $artist): string
+    {
+        $color = strtoupper(trim((string) $artist->value('bgcolor')));
+
+        if (! preg_match('/^#[0-9A-F]{3,8}$/', $color)) {
+            return '';
+        }
+
+        return '<div class="flex items-center gap-2">'
+            .'<span class="inline-block size-4 shrink-0 rounded-sm border border-black/10" style="background-color: '.$color.'"></span>'
+            .'<span class="font-mono text-xs">'.$color.'</span></div>';
     }
 
     /** The old buttons copied a:<id> / b:<id> with the Nova id; new artists use their entry id. */

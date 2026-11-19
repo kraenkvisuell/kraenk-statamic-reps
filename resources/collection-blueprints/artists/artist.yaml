@@ -30,6 +30,7 @@ tabs:
           - { handle: portrait_image, field: { type: assets, display: 'Portrait (image or video)', container: main, max_files: 1, width: 50 } }
           - { handle: portfolio_image, field: { type: assets, display: 'Portfolio image', instructions: 'Empty: the work flagged as portfolio image.', container: main, max_files: 1, width: 50 } }
           - { handle: disciplines, field: { type: entries, display: Disciplines, collections: [disciplines], mode: select, localizable: false, listable: true } }
+          - { handle: reps_bgcolor, field: { type: reps_html, display: 'Background colour', visibility: computed, listable: true, reps_feature: artist_bgcolor, if: { title: 'equals __listing_only__' } } }
           - { handle: categories, field: { type: entries, display: Categories, instructions: 'Filled from the slideshows. Order them to change the order on the artist page.', collections: [categories], mode: select, reps_feature: artist_categories_order, localizable: false } }
   details:
     display: Details
