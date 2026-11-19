@@ -248,6 +248,10 @@ class AdjustBlueprints
             $field['display'] = Reps::label($labels[$handle]);
         }
 
+        if (in_array($handle, ['reps_portfolio_images', 'reps_startpage_images'], true) && Reps::config('cp.listing_videos', false)) {
+            $field['type'] = 'reps_listing_assets';
+        }
+
         return $field;
     }
 }

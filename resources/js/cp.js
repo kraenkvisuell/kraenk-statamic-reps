@@ -369,3 +369,25 @@ Statamic.booted(() => {
         return titles.length ? replicatorPreviewHtml(badge(`${__(label)}: ${titles.join(', ')}`)) : null;
     });
 });
+
+// Assets cells of the artist list with cp.listing_videos (Fieldtypes\ListingAssets): videos play
+// like in the old Nova index, everything else goes through Statamic's own assets cell.
+Statamic.booting(() => {
+    Statamic.$components.register('reps_listing_assets-fieldtype-index', {
+        props: ['value', 'values', 'handle'],
+        render() {
+            const assets = (this.value?.assets || []).slice(0, this.value?.total > 6 ? 5 : 6);
+            const cells = assets.map((asset) => asset.is_video
+                ? Vue.h('a', { key: asset.id, href: asset.url, target: '_blank' }, [
+                    Vue.h('video', { src: asset.url, autoplay: true, muted: true, loop: true, playsinline: true, preload: 'metadata', class: '-my-1 h-8 max-w-3xs' }),
+                ])
+                : Vue.h(Vue.resolveComponent('assets-fieldtype-index'), { key: asset.id, handle: this.handle, values: this.values, value: { total: 1, assets: [asset] } }));
+
+            if (this.value?.total > 6) {
+                cells.push(Vue.h('span', { class: '-my-1 flex h-8 min-w-8 items-center justify-center px-1.5 font-mono text-gray-600 dark:text-gray-400' }, ' + ' + (this.value.total - 5)));
+            }
+
+            return Vue.h('div', { class: 'flex text-2xs gap-2' }, cells);
+        },
+    });
+});

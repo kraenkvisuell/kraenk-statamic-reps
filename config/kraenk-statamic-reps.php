@@ -89,6 +89,15 @@ return [
     // CP artist list (like the old Nova index): portfolio images shown per artist
     'cp' => [
         'artist_portfolio_images' => 3,
+        // fill the remaining slots when fewer works are flagged: works flagged show_in_overview, then
+        // the first works (the old has_portfolio_images_fallback)
+        'artist_portfolio_images_fallback' => false,
+        // look for those works in the slideshows by their Nova id instead of in the artist's order
+        // (the order the old index read them in; slideshows created since then come last)
+        'artist_portfolio_images_legacy_order' => false,
+        // videos in the portfolio and start page image columns play (muted, looped) instead of
+        // showing a file icon, like the old Nova index (Fieldtypes\ListingAssets)
+        'listing_videos' => false,
         'slideshow_thumbnails' => 99,      // works shown per slideshow in the artist's slideshows field
         // thumbnails from the Glide cache's CDN once generated, instead of a PHP request each
         // (Imaging\CdnThumbnailAsset; only when Glide serves its cache directly, e.g. from Bunny)

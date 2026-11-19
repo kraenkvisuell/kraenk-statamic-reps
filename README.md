@@ -166,6 +166,10 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   columns hidden by default), "Copy Link" / "Copy Link 2" buttons copying `a:<Nova id>` /
   `b:<Nova id>` (feature `artist_copy_links`), portfolio images (`cp.artist_portfolio_images`,
   label `labels.portfolio_images`), start page images (feature `startpage_images`), disciplines.
+  Opt-in like the old Nova sites that had it: `cp.artist_portfolio_images_fallback` fills empty
+  slots with works shown in overviews, then the first works; `cp.artist_portfolio_images_legacy_order`
+  looks for them in the slideshows by Nova id; `cp.listing_videos` plays videos in the image columns
+  instead of a file icon (`reps_listing_assets` fieldtype).
   HTML cells use the `reps_html` fieldtype, whose index component is in `resources/js/cp.js` (plain
   JS, no build; published to `public/vendor/kraenk-statamic-reps` by `statamic:install`).
 - **Asset metadata cache:** every image a page renders needs its asset's metadata (`.meta/*.yaml` on

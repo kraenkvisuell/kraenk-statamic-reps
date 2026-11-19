@@ -52,30 +52,48 @@ class ArtistListing
         ];
     }
 
-    /** Paths of the artist's own portfolio image first, then of the works flagged as portfolio images. */
+    /**
+     * Paths of the artist's own portfolio image first, then of the works flagged as portfolio
+     * images. With cp.artist_portfolio_images_fallback, the remaining slots are filled with works
+     * flagged show_in_overview, then with the first works (the old Artist::portfolioImages()).
+     */
     public static function portfolioImages(Entry $artist): array
     {
         $limit = (int) Reps::config('cp.artist_portfolio_images', 3);
+        $legacyOrder = (bool) Reps::config('cp.artist_portfolio_images_legacy_order', false);
 
-        return collect((array) $artist->value('portfolio_image'))
-            ->merge(static::flaggedFiles($artist, 'is_portfolio_image', $limit))
+        $files = collect((array) $artist->value('portfolio_image'))
+            ->merge(static::flaggedFiles($artist, 'is_portfolio_image', $limit, $legacyOrder))
             ->filter()
-            ->unique()
-            ->take($limit)
-            ->values()
-            ->all();
+            ->unique();
+
+        if (Reps::config('cp.artist_portfolio_images_fallback', false) && $files->count() < $limit) {
+            $files = $files
+                ->merge(static::flaggedFiles($artist, 'show_in_overview', $limit, $legacyOrder))
+                ->merge(static::flaggedFiles($artist, null, $limit, $legacyOrder))
+                ->unique();
+        }
+
+        return $files->take($limit)->values()->all();
     }
 
     /**
-     * Files of the artist's works with a flag, in slideshow order. Reads the raw work rows instead
-     * of Portfolio::flagged(), which builds a full item (asset, url, ratio) for every work: with
-     * ~10,000 works that took 14 s for one listing page.
+     * Files of the artist's works with a flag (any work without one), in slideshow order (with
+     * $legacyOrder: the slideshows by Nova id, the order the old index read them in). Reads the
+     * raw work rows instead of Portfolio::flagged(), which builds a full item (asset, url, ratio)
+     * for every work: with ~10,000 works that took 14 s for one listing page.
      */
-    public static function flaggedFiles(Entry $artist, string $flag, ?int $limit = null): array
+    public static function flaggedFiles(Entry $artist, ?string $flag, ?int $limit = null, bool $legacyOrder = false): array
     {
-        $files = Portfolio::slideshows($artist)
+        $slideshows = Portfolio::slideshows($artist);
+
+        if ($legacyOrder) {
+            $slideshows = $slideshows->sortBy(fn ($slideshow) => (int) $slideshow->root()->get('legacy_id') ?: PHP_INT_MAX);
+        }
+
+        $files = $slideshows
             ->flatMap(fn ($slideshow) => $slideshow->root()->get('works', []))
-            ->filter(fn ($work) => ($work['enabled'] ?? true) && ! empty($work[$flag]) && ! empty($work['file']))
+            ->filter(fn ($work) => ($work['enabled'] ?? true) && ($flag === null || ! empty($work[$flag])) && ! empty($work['file']))
             ->pluck('file')
             ->unique()
             ->values();
