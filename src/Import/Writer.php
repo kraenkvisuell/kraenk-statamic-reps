@@ -271,8 +271,14 @@ class Writer
      */
     public function tree(string $collection, array $legacyIds, ?string $site = null): void
     {
-        $sites = $site ? [$site] : Collections::findByHandle($collection)->sites()->all();
         $structure = Collections::findByHandle($collection)->structure();
+
+        // an unordered collection (unordered_collections) has no tree to keep in order
+        if (! $structure) {
+            return;
+        }
+
+        $sites = $site ? [$site] : Collections::findByHandle($collection)->sites()->all();
         $order = $this->ids($collection, $legacyIds);
 
         foreach ($sites as $site) {

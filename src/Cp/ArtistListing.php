@@ -45,15 +45,7 @@ class ArtistListing
     /** The artist's colour as a swatch with its hex code (feature artist_bgcolor), like the Nova index. */
     public static function bgcolor(Entry $artist): string
     {
-        $color = strtoupper(trim((string) $artist->value('bgcolor')));
-
-        if (! preg_match('/^#[0-9A-F]{3,8}$/', $color)) {
-            return '';
-        }
-
-        return '<div class="flex items-center gap-2">'
-            .'<span class="inline-block size-4 shrink-0 rounded-sm border border-black/10" style="background-color: '.$color.'"></span>'
-            .'<span class="font-mono text-xs">'.$color.'</span></div>';
+        return ColorColumn::html($artist->value('bgcolor'));
     }
 
     /** The old buttons copied a:<id> / b:<id> with the Nova id; new artists use their entry id. */

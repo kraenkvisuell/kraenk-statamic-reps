@@ -113,7 +113,8 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
 
 - **Content model.** Collections `pages`, `artists`, `slideshows` (works as replicator rows),
   `categories`, `disciplines`, optional `news`, `productions`, `special_categories` +
-  `special_projects`, `projects` + `skills`, `clients`. Blueprints live in
+  `special_projects`, `projects` + `skills`, `clients`; orderable (a tree) except those in
+  `unordered_collections` (e.g. `['pages']`, left without a structure). Blueprints live in
   `resources/collection-blueprints/` and are registered as namespaces, so they are not copied into
   the sites; `Listeners\AdjustBlueprints` inlines the addon fieldsets (`reps::seo`, `reps::main_content`,
   `reps::work_common` …), removes fields whose `reps_feature` is off and blocks not in `page_blocks`,
@@ -166,7 +167,8 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   columns hidden by default), "Copy Link" / "Copy Link 2" buttons copying `a:<Nova id>` /
   `b:<Nova id>` (feature `artist_copy_links`), portfolio images (`cp.artist_portfolio_images`,
   label `labels.portfolio_images`), start page images (feature `startpage_images`), disciplines,
-  the colour as swatch and hex code (feature `artist_bgcolor`).
+  the colour as swatch and hex code (feature `artist_bgcolor`). The CP page list shows the page
+  colour the same way (feature `page_bgcolor`, `Cp\ColorColumn`).
   Opt-in like the old Nova sites that had it: `cp.artist_portfolio_images_fallback` fills empty
   slots with works shown in overviews, then the first works; `cp.artist_portfolio_images_legacy_order`
   looks for them in the slideshows by Nova id; `cp.listing_videos` plays videos in the image columns

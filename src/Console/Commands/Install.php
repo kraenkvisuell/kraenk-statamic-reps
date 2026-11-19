@@ -77,7 +77,7 @@ class Install extends Command
             $data['propagate'] = true;
         }
 
-        if (isset(static::ORDERED[$handle])) {
+        if (isset(static::ORDERED[$handle]) && ! in_array($handle, Reps::config('unordered_collections', []), true)) {
             $data['structure'] = ['max_depth' => static::ORDERED[$handle]];
         }
 

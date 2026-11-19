@@ -17,6 +17,10 @@ return [
         'clients' => false,             // client logos (krw)
     ],
 
+    // collections that reps:install leaves without an order (no tree, the CP lists them as a list),
+    // e.g. ['pages'] where the menus come from the navigations and the order shows nowhere
+    'unordered_collections' => [],
+
     /*
     | Optional fields. A field tagged `reps_feature: <key>` in the addon's blueprints is only shown
     | when its feature is on.
