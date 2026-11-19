@@ -60,6 +60,9 @@ return [
         'lightbox_requires_login' => false, // only logged-in users see the lightbox (wfr)
         'news_subtitle' => false,
         'news_text' => false,              // a short rich text instead of content blocks (wfr)
+        // the text on a news item in its own field (headline, the old title); the title is
+        // generated as "Artist / Project" (Support\NewsTitle, the collection's title_format) (wfr)
+        'news_headline' => false,
         'news_content' => true,            // content blocks (main_content)
         'news_articles' => false,          // date, abstract, overview image, sticky (krw)
         'news_post_types' => false,        // post / artist link / slideshow link, placeholder text (visualeyes)

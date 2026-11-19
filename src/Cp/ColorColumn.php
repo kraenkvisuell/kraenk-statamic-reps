@@ -8,7 +8,8 @@ use Statamic\Statamic;
 
 /**
  * Colour columns of the CP lists, like the Nova index: a swatch with the hex code. Artists
- * (reps_bgcolor in Cp\ArtistListing, feature artist_bgcolor) and pages (feature page_bgcolor);
+ * (reps_bgcolor in Cp\ArtistListing, feature artist_bgcolor), pages (feature page_bgcolor) and
+ * news (feature work_bgcolor);
  * computed values of reps_html fields, only calculated for CP requests.
  */
 class ColorColumn
@@ -16,6 +17,7 @@ class ColorColumn
     public static function register(): void
     {
         Collection::computed('pages', 'reps_bgcolor', fn (Entry $page) => Statamic::isCpRoute() ? static::html($page->value('bg_color')) : null);
+        Collection::computed('news', 'reps_bgcolor', fn (Entry $news) => Statamic::isCpRoute() ? static::html($news->value('bgcolor')) : null);
     }
 
     public static function html(mixed $color): string

@@ -28,6 +28,11 @@ class AdjustBlueprints
 
         $contents = static::adjust($blueprint->contents(), $blueprint->handle());
 
+        // a generated news title (news_headline) isn't edited: hidden, like Statamic's own with a title_format
+        if ($collection === 'news' && Reps::feature('news_headline')) {
+            $contents = static::generatedTitle($contents);
+        }
+
         // the position select is the listing's first column (Cp\PositionColumn)
         if (in_array($collection, PositionColumn::collections(), true) && $tab = array_key_first($contents['tabs'] ?? [])) {
             array_unshift($contents['tabs'][$tab]['sections'][0]['fields'], PositionColumn::field());
@@ -40,6 +45,27 @@ class AdjustBlueprints
         if (SimpleTranslations::enabled()) {
             app(AdjustBlueprint::class)->handle($event);
         }
+    }
+
+    protected static function generatedTitle(array $contents): array
+    {
+        foreach ($contents['tabs'] ?? [] as $tabHandle => $tab) {
+            foreach ($tab['sections'] ?? [] as $i => $section) {
+                foreach ($section['fields'] ?? [] as $j => $field) {
+                    if (($field['handle'] ?? null) === 'title') {
+                        $contents['tabs'][$tabHandle]['sections'][$i]['fields'][$j]['field'] = ['type' => 'hidden', 'required' => false, 'localizable' => true];
+                    }
+
+                    // empty: follows the title on save (Listeners\NewsSlug)
+                    if (($field['handle'] ?? null) === 'slug') {
+                        $contents['tabs'][$tabHandle]['sections'][$i]['fields'][$j]['field']['required'] = false;
+                        $contents['tabs'][$tabHandle]['sections'][$i]['fields'][$j]['field']['instructions'] = 'Empty: from the title.';
+                    }
+                }
+            }
+        }
+
+        return $contents;
     }
 
     public static function adjust(array $contents, string $handle): array

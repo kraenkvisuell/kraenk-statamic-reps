@@ -104,6 +104,7 @@ class ServiceProvider extends AddonServiceProvider
         Event::listen(EntryBlueprintFound::class, AdjustBlueprints::class);
         Event::listen(EntrySaved::class, SyncRelations::class);
         Event::listen(EntrySaving::class, [Translations\Listener::class, 'entrySaving']);
+        Event::listen(EntrySaving::class, Listeners\NewsSlug::class);
         Event::listen(GlobalVariablesSaving::class, [Translations\Listener::class, 'globalsSaving']);
         Event::listen(GlobalVariablesSaved::class, [Translations\Listener::class, 'globalsSaved']);
         // global blueprints have no parent; translatable fields need the variables to find the other sites
@@ -199,6 +200,11 @@ class ServiceProvider extends AddonServiceProvider
         Collection::computed('artists', 'discipline_slug', $parentSlug('disciplines'));
         Cp\ArtistListing::register();
         Cp\ColorColumn::register();
+
+        // the generated news title (title_format '{reps_title}', see Support\NewsTitle)
+        if (Reps::feature('news_headline')) {
+            Collection::computed('news', 'reps_title', fn ($news) => Support\NewsTitle::of($news));
+        }
         Cp\PositionColumn::register();
 
         Collection::computed('categories', 'route_segment', fn ($entry) => Reps::config('category_route_segments.'.$entry->root()->slug())

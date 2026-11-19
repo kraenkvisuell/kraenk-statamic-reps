@@ -6,6 +6,7 @@ tabs:
       -
         fields:
           - { handle: title, field: { type: text, display: Title, required: true, localizable: true } }
+          - { handle: headline, field: { type: text, display: Headline, instructions: 'Shown on the news item. The title is generated from the artist and project.', localizable: true, reps_feature: news_headline } }
           - { handle: subtitle, field: { type: text, display: Subtitle, localizable: true, reps_feature: news_subtitle } }
           - { handle: type, field: { type: button_group, display: Type, options: { post: Post, artist_link: 'Link to artist', slideshow_link: 'Link to slideshow' }, default: post, reps_feature: news_post_types } }
           - { handle: publish_date, field: { type: date, display: Date, reps_feature: news_articles } }
@@ -23,6 +24,8 @@ tabs:
           - { handle: width_in_frame, field: { type: button_group, display: 'Width in frame', options: { full: Full, two_thirds: 'Two thirds', half: Half }, width: 50, reps_feature: width_in_frame } }
           - { handle: title_position, field: { type: select, display: 'Title position', options: { bottom_left: 'Bottom left', bottom_right: 'Bottom right', top_left: 'Top left', top_right: 'Top right' }, width: 50, reps_feature: title_position } }
           - { handle: bgcolor, field: { type: color, display: Background, width: 50, reps_feature: work_bgcolor } }
+          # column of the CP list only (computed in Cp\ColorColumn, never shown in the form)
+          - { handle: reps_bgcolor, field: { type: reps_html, display: 'Background colour', visibility: computed, listable: true, reps_feature: work_bgcolor, if: { title: 'equals __listing_only__' } } }
           - { import: 'reps::main_content' }
   seo:
     display: SEO

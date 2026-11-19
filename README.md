@@ -168,7 +168,14 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   `b:<Nova id>` (feature `artist_copy_links`), portfolio images (`cp.artist_portfolio_images`,
   label `labels.portfolio_images`), start page images (feature `startpage_images`), disciplines,
   the colour as swatch and hex code (feature `artist_bgcolor`). The CP page list shows the page
-  colour the same way (feature `page_bgcolor`, `Cp\ColorColumn`).
+  colour the same way (feature `page_bgcolor`, `Cp\ColorColumn`), the news list too (feature
+  `work_bgcolor`).
+- **Generated news titles** (feature `news_headline`, wfr): the text on a news item is its
+  `headline` (the old title); the title is "Artist / Project" (`Support\NewsTitle`: the project's
+  artist when the item has none, else the headline or subtitle, else "News"), via the collection's
+  `title_format: '{reps_title}'` (written by `reps:install`) and the computed `reps_title`, hidden in
+  the form. The import writes the same title, and the slug from it (old id appended only where two
+  items share one); an empty slug in the CP follows the title, with -2, -3 … (`Listeners\NewsSlug`).
   Opt-in like the old Nova sites that had it: `cp.artist_portfolio_images_fallback` fills empty
   slots with works shown in overviews, then the first works; `cp.artist_portfolio_images_legacy_order`
   looks for them in the slideshows by Nova id; `cp.listing_videos` plays videos in the image columns

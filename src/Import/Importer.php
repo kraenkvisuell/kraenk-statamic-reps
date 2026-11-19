@@ -7,6 +7,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Kraenkvisuell\StatamicReps\Listeners\SyncRelations;
 use Kraenkvisuell\StatamicReps\Reps;
+use Kraenkvisuell\StatamicReps\Support\NewsTitle;
 use Kraenkvisuell\StatamicReps\Translations\SimpleTranslations;
 use Statamic\Facades\Entry;
 use Statamic\Facades\GlobalSet;
@@ -418,6 +419,16 @@ class Importer
         $table = $this->legacy->hasTable('posts') ? 'posts' : 'news_items';
         $rows = $this->legacy->rows($table);
         $has = fn ($column) => $this->legacy->hasColumn($table, $column);
+        $headlines = Reps::feature('news_headline');
+
+        // news_headline: the title is "Artist / Project" (Support\NewsTitle), the slug follows it
+        // (with the old id only where two items would share one)
+        $generated = $headlines ? $rows->mapWithKeys(fn ($row) => [$row->id => NewsTitle::make(
+            $this->writer->id('artists', $row->artist_id ?? null),
+            $this->writer->id('slideshows', $row->slideshow_id ?? null),
+            $this->legacy->singleLine($row->title) ?: ($has('subtitle') ? $this->legacy->singleLine($row->subtitle) : null),
+        )]) : collect();
+        $slugCounts = $generated->map(fn ($title) => Str::slug($title))->countBy();
 
         foreach ($rows as $row) {
             [$data, $localized] = $this->sites([
@@ -437,7 +448,8 @@ class Importer
                 'bgcolor' => $row->bgcolor ?? null,
                 'og_image' => $this->content->ogImage($row),
             ], fn ($locale) => [
-                'title' => $this->legacy->singleLine($row->title, $locale),
+                'title' => $headlines ? $generated[$row->id] : $this->legacy->singleLine($row->title, $locale),
+                'headline' => $headlines ? $this->legacy->singleLine($row->title, $locale) : null,
                 'subtitle' => $has('subtitle') ? $this->legacy->singleLine($row->subtitle, $locale) : null,
                 'abstract' => $has('abstract') ? trim($this->legacy->translated($row->abstract, $locale)) : null,
                 'text' => $has('text') ? $this->content->bard($this->legacy->translated($row->text, $locale)) : null,
@@ -445,8 +457,14 @@ class Importer
                 'main_content' => $this->content->blocks($row->main_content ?? $row->content ?? null, "news|$row->id", $locale),
             ] + $this->content->seo($row, $locale));
 
-            $title = $this->title($row);
-            $slug = $has('slug') && filled($row->slug) ? $this->slugs($row->slug, $title) : Str::slug($title).'-'.$row->id;
+            $title = $headlines ? $generated[$row->id] : $this->title($row);
+
+            if ($headlines) {
+                $slug = Str::slug($title) ?: 'news';
+                $slug = (($slugCounts[$slug] ?? 0) > 1 || $slug === 'news') ? "$slug-$row->id" : $slug;
+            } else {
+                $slug = $has('slug') && filled($row->slug) ? $this->slugs($row->slug, $title) : Str::slug($title).'-'.$row->id;
+            }
 
             $this->writer->upsert('news', $row->id, $title, $data, $localized, $slug,
                 published: (bool) ($row->is_published ?? true));

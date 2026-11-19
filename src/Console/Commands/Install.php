@@ -81,6 +81,11 @@ class Install extends Command
             $data['structure'] = ['max_depth' => static::ORDERED[$handle]];
         }
 
+        // the title is generated (Support\NewsTitle), the text on the item is the headline
+        if ($handle === 'news' && Reps::feature('news_headline')) {
+            $data['title_format'] = '{reps_title}';
+        }
+
         if ($handle === 'slideshows') {
             $data['date'] = true;
             $data['sort_dir'] = 'desc';
