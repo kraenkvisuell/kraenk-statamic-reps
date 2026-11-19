@@ -157,7 +157,10 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   `{{ reps:category_artists }}`, `{{ reps:overview }}`, `{{ reps:slideshows }}`, `{{ reps:rows }}`).
 - **Storage:** the `bunny-assets`, `bunny-glide-cache`, `assets` and `legacy-media` disks
   (from `BUNNY_*` / `LEGACY_S3_*`) unless the site defines them; `reps:copy-assets-to-bunny`,
-  `reps:warm-glide`, `reps:refresh-uris`.
+  `reps:warm-glide`, `reps:refresh-uris`. The Bunny disks use the `bunny` driver: S3 with failed reads
+  retried (`Support\RetryingReads`, disk keys `retries` / `retry_delay`), because Bunny's replicas
+  are sometimes out of step and answer 404 or an error for files that exist, which aborted Glide
+  renders and re-syncs.
 - **CP artist list** like the old Nova index (`Cp\ArtistListing`, computed `reps_*` fields in the
   artist blueprint that only appear in the list): the name with `/slug` underneath (title and slug
   columns hidden by default), "Copy Link" / "Copy Link 2" buttons copying `a:<Nova id>` /

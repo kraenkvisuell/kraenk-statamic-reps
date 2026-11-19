@@ -110,10 +110,15 @@ class Media
         $remote = $container->diskHandle() !== 'assets';
 
         // assets whose meta doesn't exist yet: new files, or files imported before without meta
-        $withoutMeta = array_values(array_filter(
-            array_diff($paths, $absent),
-            fn ($path) => ! $container->disk()->exists(dirname($path) === '.' ? '.meta/'.basename($path).'.yaml' : dirname($path).'/.meta/'.basename($path).'.yaml'),
-        ));
+        $metaExists = fn ($path) => $container->disk()->exists(dirname($path) === '.' ? '.meta/'.basename($path).'.yaml' : dirname($path).'/.meta/'.basename($path).'.yaml');
+        $withoutMeta = array_values(array_filter(array_diff($paths, $absent), fn ($path) => ! $metaExists($path)));
+
+        // Bunny sometimes answers 404 for files that exist (replicas out of step): look again
+        // before uploading, otherwise every run uploads a few more files than the one before
+        if ($withoutMeta && $remote) {
+            sleep(2);
+            $withoutMeta = array_values(array_filter($withoutMeta, fn ($path) => ! $metaExists($path)));
+        }
 
         $changed = array_values(array_unique(array_merge($replaced, $converted)));
         $upload = array_values(array_unique(array_merge($produce, $remote ? $withoutMeta : [])));

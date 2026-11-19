@@ -2,12 +2,17 @@
 
 namespace Kraenkvisuell\StatamicReps;
 
+use Illuminate\Filesystem\AwsS3V3Adapter;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Storage;
 use Kraenkvisuell\StatamicReps\Console\Commands;
 use Kraenkvisuell\StatamicReps\Imaging\OriginalGifManipulator;
 use Kraenkvisuell\StatamicReps\Listeners\AdjustBlueprints;
 use Kraenkvisuell\StatamicReps\Listeners\SyncRelations;
 use Kraenkvisuell\StatamicReps\Support\GlobalBlueprints;
+use Kraenkvisuell\StatamicReps\Support\RetryingReads;
+use League\Flysystem\Filesystem as Flysystem;
 use Statamic\Contracts\Assets\Asset;
 use Statamic\Contracts\Imaging\ImageManipulator;
 use Statamic\Contracts\Imaging\UrlBuilder;
@@ -141,6 +146,18 @@ class ServiceProvider extends AddonServiceProvider
     // disks of the config (Bunny, the local mirror, the old media bucket) unless the site defines them
     protected function registerDisks(): void
     {
+        // the S3 driver with retried reads (Support\RetryingReads): Bunny's replicas are sometimes
+        // out of step and answer 404 or an error for files that exist
+        Storage::extend('bunny', function ($app, array $config) {
+            $s3 = Storage::createS3Driver($config);
+            $adapter = new RetryingReads($s3->getAdapter(), $config['retries'] ?? 3, $config['retry_delay'] ?? 500);
+            $filesystem = new Flysystem($adapter, Arr::only($config, [
+                'directory_visibility', 'disable_asserts', 'retain_visibility', 'temporary_url', 'url', 'visibility',
+            ]));
+
+            return new AwsS3V3Adapter($filesystem, $s3->getAdapter(), $s3->getConfig(), $s3->getClient());
+        });
+
         foreach (Reps::config('disks', []) as $name => $disk) {
             if (! $disk || config("filesystems.disks.$name")) {
                 continue;

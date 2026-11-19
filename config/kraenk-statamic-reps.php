@@ -175,7 +175,7 @@ return [
     */
     'disks' => [
         'bunny-assets' => [
-            'driver' => 's3',
+            'driver' => 'bunny',
             'key' => env('BUNNY_S3_KEY'),
             'secret' => env('BUNNY_S3_SECRET'),
             'region' => env('BUNNY_S3_REGION', 'de'),
@@ -185,9 +185,11 @@ return [
             'root' => 'assets',
             'use_path_style_endpoint' => true,
             'throw' => false,
+            'retries' => 3,         // failed reads, after 0.5 / 1 / 2 s (driver bunny: S3 + RetryingReads)
+            'retry_delay' => 500,
         ],
         'bunny-glide-cache' => [
-            'driver' => 's3',
+            'driver' => 'bunny',
             'key' => env('BUNNY_S3_KEY'),
             'secret' => env('BUNNY_S3_SECRET'),
             'region' => env('BUNNY_S3_REGION', 'de'),
@@ -197,6 +199,8 @@ return [
             'root' => 'glide-cache',
             'use_path_style_endpoint' => true,
             'throw' => false,
+            'retries' => 3,         // failed reads, after 0.5 / 1 / 2 s (driver bunny: S3 + RetryingReads)
+            'retry_delay' => 500,
         ],
         // the local mirror of the old originals and the container's disk until it moves to Bunny
         'assets' => [
