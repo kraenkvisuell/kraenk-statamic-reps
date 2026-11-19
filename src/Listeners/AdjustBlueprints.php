@@ -181,9 +181,11 @@ class AdjustBlueprints
                     unset($config);
                 }
 
-                // the on/off flags as switches on top of the expanded row, one per line, label to the right
+                // the on/off flags as switches on top of the expanded row, one per line, label to the
+                // right, followed by the category selects (overview categories, represents in)
                 $fields = $field['sets'][$groupHandle]['sets'][$setHandle]['fields'] ?? [];
                 $isFlag = fn ($item) => in_array($item['handle'] ?? null, static::WORK_FLAGS, true);
+                $isCategories = fn ($item) => in_array($item['handle'] ?? null, ['overview_categories', 'represents_in'], true);
                 foreach ($fields as $i => $item) {
                     if ($isFlag($item)) {
                         $fields[$i]['field'] = ['width' => 100, 'hide_display' => true, 'inline_label' => $item['field']['display'] ?? null] + $fields[$i]['field'];
@@ -192,7 +194,8 @@ class AdjustBlueprints
                 }
                 $field['sets'][$groupHandle]['sets'][$setHandle]['fields'] = [
                     ...array_values(array_filter($fields, $isFlag)),
-                    ...array_values(array_filter($fields, fn ($item) => ! $isFlag($item))),
+                    ...array_values(array_filter($fields, $isCategories)),
+                    ...array_values(array_filter($fields, fn ($item) => ! $isFlag($item) && ! $isCategories($item))),
                 ];
             }
         }
