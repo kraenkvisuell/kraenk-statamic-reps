@@ -16,11 +16,19 @@ use Throwable;
  * deletions, changed slugs), the whole pull zone when the static cache is cleared (reps:warm,
  * static:clear). Failures are reported, never thrown: a page must still be re-cached when Bunny's
  * API is down.
+ *
+ * Off with the `bunny` strategy (kraenkvisuell/statamic-bunny-cache), which does the purging itself.
  */
 class BunnyPurge
 {
     public static function enabled(): bool
     {
+        // with statamic-bunny-cache's `bunny` strategy the pull zone is the static cache, and that
+        // addon purges exactly what Statamic invalidates (pages by tag, never the assets)
+        if (config('statamic.static_caching.strategy') === 'bunny') {
+            return false;
+        }
+
         return filled(Reps::config('static_caching.bunny.api_key')) && filled(Reps::config('static_caching.bunny.pull_zone'));
     }
 

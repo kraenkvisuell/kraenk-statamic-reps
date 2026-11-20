@@ -211,6 +211,9 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   in front of the site follows the static cache: every URL a warm job has just rendered and every
   invalidated URL is purged, the whole zone when the static cache is cleared (`reps:warm`,
   `static:clear`). Otherwise Bunny keeps its copy until it expires, and saves don't reach visitors.
+  Off with the `bunny` strategy of [statamic-bunny-cache](https://github.com/kraenkvisuell/statamic-bunny-cache)
+  (the pull zone is the static cache and that addon purges pages by tag); leave `REPS_WARM_IP` unset
+  then, so `reps:warm` fills the edge instead of only the origin.
 - **Special projects only inside their category:** the `special_projects` collection is removed from
   Collections in the CP nav; its entries are edited through the special category's projects field.
 - **From [statamic-bunny-assets](https://github.com/kraenkvisuell/statamic-bunny-assets)** (required
