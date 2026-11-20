@@ -129,6 +129,8 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   deterministic) are made to match the dump, rows deleted in Nova are deleted, entries created in
   Statamic are never touched. Rich text → Bard, nova-cms blocks → `main_content` sets, settings →
   globals (`legacy.settings`, incl. grids), menus → navigations, multi-locale → localizations.
+  `legacy.robots => false` imports everything as indexed and followed, for old themes that wrote
+  `index, follow` whatever the robots checkboxes said (the new site respects them).
   A second run reports nothing to do. Options `--only=`, `--no-media`, `--keep-deleted`, `--dry-run`.
 - **Animated GIFs keep their original file** (`imaging.original_gifs`, passed on to
   [statamic-bunny-assets](https://github.com/kraenkvisuell/statamic-bunny-assets)): the Glide tag

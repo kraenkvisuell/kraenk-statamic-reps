@@ -314,6 +314,9 @@ return [
         'media_url' => null,
         // media_source http: also compare the sizes of existing files (one HEAD request per file)
         'media_check_sizes' => false,
+        // import the robots checkboxes (noindex / nofollow); false where the old theme ignored them
+        // and wrote `index, follow` on every page: everything is imported as indexed and followed
+        'robots' => true,
         // the old site's base URL, for links in content that point to itself
         'url' => null,
         // old URLs with Nova ids, redirected to the imported entry: pattern => collection

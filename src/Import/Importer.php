@@ -635,7 +635,9 @@ class Importer
             $prefixes = ['home' => ''] + collect(Reps::config('seo.index_pages', []))->mapWithKeys(fn ($page, $key) => [$key => "{$key}_"])->all();
 
             foreach ($prefixes as $key => $prefix) {
-                $robots = ['index' => $settings["{$prefix}robots_index"] ?? '1', 'follow' => $settings["{$prefix}robots_follow"] ?? '1'];
+                $robots = Reps::config('legacy.robots', true)
+                    ? ['index' => $settings["{$prefix}robots_index"] ?? '1', 'follow' => $settings["{$prefix}robots_follow"] ?? '1']
+                    : ['index' => '1', 'follow' => '1'];
                 $values += [
                     "{$key}_browser_title" => $this->legacy->singleLine($settings["{$prefix}browser_title"] ?? '', $locale),
                     "{$key}_meta_description" => trim($value("{$prefix}meta_description", $locale)),

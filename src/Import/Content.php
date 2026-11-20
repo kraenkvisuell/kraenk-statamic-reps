@@ -256,7 +256,8 @@ class Content
     /** SEO fields of a Nova row in one locale. */
     public function seo(object $row, ?string $locale = null): array
     {
-        $robots = $this->legacy->json($row->robots ?? null);
+        // legacy.robots off: the old theme wrote `index, follow` whatever the checkboxes said
+        $robots = Reps::config('legacy.robots', true) ? $this->legacy->json($row->robots ?? null) : null;
 
         return [
             'browser_title' => property_exists($row, 'browser_title') ? $this->legacy->singleLine($row->browser_title, $locale) : null,
