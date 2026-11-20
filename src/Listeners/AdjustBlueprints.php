@@ -3,6 +3,7 @@
 namespace Kraenkvisuell\StatamicReps\Listeners;
 
 use Bastihilger\SimpleStatamicTranslations\Listeners\AdjustBlueprint;
+use Illuminate\Support\Str;
 use Kraenkvisuell\StatamicReps\Cp\PositionColumn;
 use Kraenkvisuell\StatamicReps\Reps;
 use Kraenkvisuell\StatamicReps\Translations\SimpleTranslations;
@@ -275,6 +276,11 @@ class AdjustBlueprints
 
         if (isset($labels[$handle])) {
             $field['display'] = Reps::label($labels[$handle]);
+        }
+
+        // the news type (feature news_post_types) names slideshows like the site does ("Link to project")
+        if ($handle === 'type' && isset($field['options']['slideshow_link'])) {
+            $field['options']['slideshow_link'] = 'Link to '.Str::lower(Reps::label('slideshow'));
         }
 
         if (in_array($handle, ['reps_portfolio_images', 'reps_startpage_images'], true) && Reps::config('cp.listing_videos', false)) {
