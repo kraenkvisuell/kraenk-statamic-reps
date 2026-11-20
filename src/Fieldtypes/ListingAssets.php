@@ -2,14 +2,15 @@
 
 namespace Kraenkvisuell\StatamicReps\Fieldtypes;
 
-use Statamic\Fieldtypes\Assets\Assets;
+use Kraenkvisuell\StatamicBunnyAssets\Fieldtypes\CdnThumbnailAssets;
 
 /**
  * The assets columns of the CP artist list with cp.listing_videos: videos play (muted, looped)
  * instead of showing a file icon, everything else is Statamic's own assets cell (index component
- * in resources/js/cp.js). AdjustBlueprints swaps the reps_*_images columns to this type.
+ * in resources/js/cp.js). AdjustBlueprints swaps the reps_*_images columns to this type. Image
+ * thumbnails come from the Glide CDN once generated (statamic-bunny-assets).
  */
-class ListingAssets extends Assets
+class ListingAssets extends CdnThumbnailAssets
 {
     protected static $handle = 'reps_listing_assets';
 
