@@ -106,9 +106,6 @@ return [
         // showing a file icon, like the old Nova index (Fieldtypes\ListingAssets)
         'listing_videos' => false,
         'slideshow_thumbnails' => 99,      // works shown per slideshow in the artist's slideshows field
-        // thumbnails from the Glide cache's CDN once generated, instead of a PHP request each
-        // (statamic-bunny-assets's Assets\CdnThumbnailAsset; only when Glide serves its cache directly, e.g. from Bunny)
-        'cdn_thumbnails' => true,
         // orderable collections whose CP listing starts with a position select (Cp\PositionColumn)
         'position_columns' => [],
     ],
@@ -250,9 +247,6 @@ return [
     'imaging' => [
         // ImageMagick CLI for converting Adobe RGB originals to sRGB during the media sync
         'magick' => env('REPS_MAGICK_BIN', 'magick'),
-        // animated GIFs are output as the original file instead of a Glide copy (like Nova); `fm`
-        // still forces a conversion
-        'original_gifs' => true,
     ],
 
     'assets' => [

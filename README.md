@@ -132,9 +132,6 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   `legacy.robots => false` imports everything as indexed and followed, for old themes that wrote
   `index, follow` whatever the robots checkboxes said (the new site respects them).
   A second run reports nothing to do. Options `--only=`, `--no-media`, `--keep-deleted`, `--dry-run`.
-- **Animated GIFs keep their original file** (`imaging.original_gifs`, passed on to
-  [statamic-bunny-assets](https://github.com/kraenkvisuell/statamic-bunny-assets)): the Glide tag
-  returns the asset's CDN URL for GIFs, like Nova did. `fm` still converts.
 - **Media.** An asset's path is the old media folder + file name, so it never changes between runs.
   The local `assets` disk (`public/assets`) mirrors the old originals the content uses (rsync with
   `--files-from` from the server, an S3 disk or a public URL); with the container on Bunny only new
@@ -186,8 +183,8 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
 - **Asset metadata cache:** every image a page renders needs its asset's metadata (`.meta/*.yaml` on
   Bunny); uncached that's one Bunny request per image, minutes for an artist page. Sites give it a
   cache store of its own (`asset_meta` in `config/cache.php`), which `cache:clear` – run by composer's
-  `statamic:install` on every install – leaves alone. `reps:warm-asset-meta` (= statamic-bunny-assets's
-  `bunny-assets:warm-asset-meta`) loads all metadata in parallel (about 5 minutes for 15,000 assets; seconds when everything is cached), in the deploy
+  `statamic:install` on every install – leaves alone. statamic-bunny-assets's
+  `bunny-assets:warm-asset-meta` loads all metadata in parallel (about 5 minutes for 15,000 assets; seconds when everything is cached), in the deploy
   script before `reps:warm`. Metadata edited in another environment (the bucket is shared) stays
   cached until `php artisan cache:clear asset_meta`.
 - **Re-caching the site:** `reps:warm [--queue] [--insecure] [--dry-run]` clears the static cache
@@ -219,8 +216,11 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
 - **Special projects only inside their category:** the `special_projects` collection is removed from
   Collections in the CP nav; its entries are edited through the special category's projects field.
 - **From [statamic-bunny-assets](https://github.com/kraenkvisuell/statamic-bunny-assets)** (required
-  by this addon): CP thumbnails from the Glide CDN (off with `cp.cdn_thumbnails`), and parallel
-  uploads that don't drop each other's files from the asset listing.
+  by this addon, which only registers the disks with its `bunny` driver): CP thumbnails from the
+  Glide CDN, original GIFs, uploads that don't drop each other's files from the asset listing, the
+  asset meta warmer (`bunny-assets:warm-asset-meta`). Switched in that addon's own config
+  (`statamic-bunny-assets.cdn_thumbnails`, `.original_gifs`); reps has no settings of its own for
+  them (since v0.2.0; `cp.cdn_thumbnails`, `imaging.original_gifs` and `reps:warm-asset-meta` are gone).
 - **Warm job with an expiring lock:** the addon sets `static_caching.warm_job` (when the site leaves
   it empty) to `StaticCaching\WarmJob`, Statamic's job with a one-hour unique lock. Statamic's
   lock never expires: a warm job removed from the queue without running blocked its URL for good.

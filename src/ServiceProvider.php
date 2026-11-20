@@ -37,7 +37,6 @@ class ServiceProvider extends AddonServiceProvider
         Commands\Import::class,
         Commands\CopyAssetsToBunny::class,
         Commands\WarmGlideCache::class,
-        Commands\WarmAssetMeta::class,
         Commands\Warm::class,
         Commands\RefreshUris::class,
         Commands\Resync::class,
@@ -59,10 +58,6 @@ class ServiceProvider extends AddonServiceProvider
         $defaults = require __DIR__.'/../config/kraenk-statamic-reps.php';
         $site = $this->app['config']->get('kraenk-statamic-reps', []);
         $this->app['config']->set('kraenk-statamic-reps', Reps::mergeConfig($defaults, $site));
-
-        // the Bunny parts live in kraenkvisuell/statamic-bunny-assets; the sites switch them here
-        $this->app['config']->set('statamic-bunny-assets.cdn_thumbnails', Reps::config('cp.cdn_thumbnails', true));
-        $this->app['config']->set('statamic-bunny-assets.original_gifs', Reps::config('imaging.original_gifs', true));
     }
 
     public function bootAddon(): void
