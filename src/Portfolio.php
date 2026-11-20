@@ -159,14 +159,25 @@ class Portfolio
      */
     public static function flagged(EntryContract $artist, string $flag, ?int $limit = null, bool $fallback = false): Collection
     {
-        $all = static::slideshows($artist)->flatMap(fn ($s) => static::items($s, $artist));
-        $flagged = $all->filter(fn ($item) => ! empty($item['work'][$flag]));
+        // choose from the raw rows and build items (asset, ratio) only for the chosen works: items()
+        // would resolve every work of every slideshow of the artist (the menu: ~10 s on visualeyes)
+        $rows = static::slideshows($artist)
+            ->map(fn ($s) => static::local($s))
+            ->flatMap(fn ($s) => static::works($s)->map(fn ($work, $i) => [$s, $work, $i + 1]));
+        $item = fn ($row) => static::item($row[1], $row[2], $row[0], $artist);
+
+        $flagged = $rows->lazy()->filter(fn ($row) => ! empty($row[1][$flag]));
+        $flagged = ($limit ? $flagged->take($limit) : $flagged)->map($item)->collect();
 
         if ($fallback && $flagged->isEmpty()) {
-            $flagged = $all->filter(fn ($item) => $item['asset']);
+            $flagged = $rows->lazy()
+                ->filter(fn ($row) => ! empty($row[1]['file']))
+                ->map($item)
+                ->filter(fn ($item) => $item['asset']);
+            $flagged = ($limit ? $flagged->take($limit) : $flagged)->collect();
         }
 
-        return $limit ? $flagged->take($limit)->values() : $flagged->values();
+        return $flagged->values();
     }
 
     /**

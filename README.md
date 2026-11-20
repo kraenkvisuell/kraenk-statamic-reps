@@ -165,7 +165,7 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   columns hidden by default), "Copy Link" / "Copy Link 2" buttons copying `a:<Nova id>` /
   `b:<Nova id>` (feature `artist_copy_links`), portfolio images (`cp.artist_portfolio_images`,
   label `labels.portfolio_images`), start page images (feature `startpage_images`), disciplines,
-  the colour as swatch and hex code (feature `artist_bgcolor`). The CP page list shows the page
+  the colour as swatch and hex code (feature `artist_bgcolor`). Disciplines have a colour field only with the feature `discipline_bgcolor`. The CP page list shows the page
   colour the same way (feature `page_bgcolor`, `Cp\ColorColumn`), the news list too (feature
   `work_bgcolor`).
 - **Generated news titles** (feature `news_headline`, wfr): the text on a news item is its

@@ -7,7 +7,7 @@ tabs:
         fields:
           - { handle: title, field: { type: text, display: Title, required: true, localizable: true } }
           - { handle: description, field: { type: bard, display: Description, buttons: [bold, italic, anchor], save_html: false, localizable: true } }
-          - { handle: bgcolor, field: { type: color, display: Colour } }
+          - { handle: bgcolor, field: { type: color, display: Colour, reps_feature: discipline_bgcolor } }
   seo:
     display: SEO
     sections:

@@ -28,6 +28,7 @@ return [
     'features' => [
         'external_artists' => false,       // artists without a portfolio page
         'artist_bgcolor' => false,         // a colour per artist
+        'discipline_bgcolor' => false,     // a colour per discipline (wfr)
         'artist_testimonials' => false,
         'artist_skills' => false,          // skill headline/text/images on artists (krw)
         'artist_categories_order' => false, // artists order their categories (visualeyes)
