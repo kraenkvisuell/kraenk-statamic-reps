@@ -204,20 +204,18 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   the same URL), and Statamic's `warm_queue` (e.g. `recache`) only carries the re-caching of single
   pages after saves. Let Horizon take the queues in order without balancing
   (`'queue' => ['recache', 'default', 'warm']`, `'balance' => false`).
-- **Warm requests past the CDN:** every warm request (reps:warm, Statamic's re-caching) connects to
-  the server itself (`static_caching.warm_ip`, `REPS_WARM_IP`, default `127.0.0.1`) instead of the
-  domain's DNS, with the domain's name and certificate. Behind a CDN that ignores query strings in
-  its cache key (Bunny), the re-cache request (`?__recache=…`) would get the CDN's old copy and the
-  page would never be rendered again, and the CDN's timeout cuts off slow first renders (a 504
-  instead of a cached page). `REPS_WARM_IP=` (empty) goes through the domain again, for a queue
-  that runs on another machine than the site (since v0.2.5; before, the default was the domain).
+- **Warm requests through the CDN:** the reps sites cache their pages at the Bunny pull zone
+  (statamic-bunny-cache's `bunny` strategy), and only a request through it fills that cache, so
+  every warm request goes to the domain. Bunny gives up on a slow first render (a 504 after its
+  origin timeout) while PHP finishes it; the warm job tries again a minute later, up to 3 times.
+  (`static_caching.warm_ip` / `REPS_WARM_IP`, which sent warm requests past the CDN, is gone since
+  v0.2.6: with the `bunny` strategy the pages warmed that way never reached the cache.)
 - **Bunny purges:** with `static_caching.bunny` (`BUNNY_API_KEY`, `BUNNY_PULL_ZONE_ID`) the pull zone
   in front of the site follows the static cache: every URL a warm job has just rendered and every
   invalidated URL is purged, the whole zone when the static cache is cleared (`reps:warm`,
   `static:clear`). Otherwise Bunny keeps its copy until it expires, and saves don't reach visitors.
   Off with the `bunny` strategy of [statamic-bunny-cache](https://github.com/kraenkvisuell/statamic-bunny-cache)
-  (the pull zone is the static cache and that addon purges pages by tag); leave `REPS_WARM_IP` unset
-  then, so `reps:warm` fills the edge instead of only the origin.
+  (the pull zone is the static cache and that addon purges pages by tag).
 - **Special projects only inside their category:** the `special_projects` collection is removed from
   Collections in the CP nav; its entries are edited through the special category's projects field.
 - **From [statamic-bunny-assets](https://github.com/kraenkvisuell/statamic-bunny-assets)** (required

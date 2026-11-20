@@ -190,7 +190,7 @@ class Warm extends Command
             ->onQueue($this->queue());
     }
 
-    /** Guzzle options of the warm requests (the CDN bypass is added by WarmJob itself). */
+    /** Guzzle options of the warm requests. */
     protected function clientConfig(): array
     {
         return ['verify' => ! $this->insecure(), 'timeout' => 300];
@@ -222,15 +222,8 @@ class Warm extends Command
     /** The rendered page, '' when it can't be fetched. */
     protected function fetch(string $home): string
     {
-        $url = URL::makeAbsolute($home);
-        $options = $this->clientConfig();
-
-        if ($ip = Reps::config('static_caching.warm_ip')) {
-            $options['curl'][CURLOPT_RESOLVE] = [WarmJob::resolve($url, $ip)];
-        }
-
         try {
-            $response = Http::withOptions($options)->get($url);
+            $response = Http::withOptions($this->clientConfig())->get(URL::makeAbsolute($home));
         } catch (Throwable $e) {
             $this->warn("$home: ".$e->getMessage());
 
