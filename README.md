@@ -130,9 +130,9 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   Statamic are never touched. Rich text → Bard, nova-cms blocks → `main_content` sets, settings →
   globals (`legacy.settings`, incl. grids), menus → navigations, multi-locale → localizations.
   A second run reports nothing to do. Options `--only=`, `--no-media`, `--keep-deleted`, `--dry-run`.
-- **Animated GIFs keep their original file** (`imaging.original_gifs`): the Glide tag returns the
-  asset's CDN URL for GIFs, like Nova did. Glide re-encoded every frame (minutes per GIF), upscaled
-  small ones and produced files too large for a single upload to Bunny. `fm` still converts.
+- **Animated GIFs keep their original file** (`imaging.original_gifs`, passed on to
+  [statamic-bunny-assets](https://github.com/kraenkvisuell/statamic-bunny-assets)): the Glide tag
+  returns the asset's CDN URL for GIFs, like Nova did. `fm` still converts.
 - **Media.** An asset's path is the old media folder + file name, so it never changes between runs.
   The local `assets` disk (`public/assets`) mirrors the old originals the content uses (rsync with
   `--files-from` from the server, an S3 disk or a public URL); with the container on Bunny only new
@@ -158,10 +158,9 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   `{{ reps:category_artists }}`, `{{ reps:overview }}`, `{{ reps:slideshows }}`, `{{ reps:rows }}`).
 - **Storage:** the `bunny-assets`, `bunny-glide-cache`, `assets` and `legacy-media` disks
   (from `BUNNY_*` / `LEGACY_S3_*`) unless the site defines them; `reps:copy-assets-to-bunny`,
-  `reps:warm-glide`, `reps:refresh-uris`. The Bunny disks use the `bunny` driver: S3 with failed reads
-  retried (`Support\RetryingReads`, disk keys `retries` / `retry_delay`), because Bunny's replicas
-  are sometimes out of step and answer 404 or an error for files that exist, which aborted Glide
-  renders and re-syncs.
+  `reps:warm-glide`, `reps:refresh-uris`. The Bunny disks use the `bunny` driver from
+  statamic-bunny-assets: S3 with failed reads retried (disk keys `retries` / `retry_delay`), because
+  Bunny's replicas are sometimes out of step and answer 404 or an error for files that exist.
 - **CP artist list** like the old Nova index (`Cp\ArtistListing`, computed `reps_*` fields in the
   artist blueprint that only appear in the list): the name with `/slug` underneath (title and slug
   columns hidden by default), "Copy Link" / "Copy Link 2" buttons copying `a:<Nova id>` /
@@ -185,8 +184,8 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
 - **Asset metadata cache:** every image a page renders needs its asset's metadata (`.meta/*.yaml` on
   Bunny); uncached that's one Bunny request per image, minutes for an artist page. Sites give it a
   cache store of its own (`asset_meta` in `config/cache.php`), which `cache:clear` – run by composer's
-  `statamic:install` on every install – leaves alone. `reps:warm-asset-meta` loads all metadata in
-  parallel (about 5 minutes for 15,000 assets; seconds when everything is cached), in the deploy
+  `statamic:install` on every install – leaves alone. `reps:warm-asset-meta` (= statamic-bunny-assets's
+  `bunny-assets:warm-asset-meta`) loads all metadata in parallel (about 5 minutes for 15,000 assets; seconds when everything is cached), in the deploy
   script before `reps:warm`. Metadata edited in another environment (the bucket is shared) stays
   cached until `php artisan cache:clear asset_meta`.
 - **Re-caching the site:** `reps:warm [--queue] [--insecure] [--dry-run]` clears the static cache
@@ -214,13 +213,9 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   `static:clear`). Otherwise Bunny keeps its copy until it expires, and saves don't reach visitors.
 - **Special projects only inside their category:** the `special_projects` collection is removed from
   Collections in the CP nav; its entries are edited through the special category's projects field.
-- **CP thumbnails from the Glide CDN:** Statamic's `/cp/thumbnails/…` route is a PHP request per
-  image even when the thumbnail exists (boot, login check, streaming the file back from Bunny), and
-  the site's CDN doesn't cache it. Once the route has generated a thumbnail, its path is in Glide's
-  cache store, and the addon's asset class (`Imaging\CdnThumbnailAsset`, bound to the asset contract)
-  links the file on the Glide CDN instead, with `?v=<modified>` for the browser. Thumbnails not
-  generated yet still go through the route. Only when Glide serves its cache directly (a cache
-  disk with a URL); off with `cp.cdn_thumbnails`.
+- **From [statamic-bunny-assets](https://github.com/kraenkvisuell/statamic-bunny-assets)** (required
+  by this addon): CP thumbnails from the Glide CDN (off with `cp.cdn_thumbnails`), and parallel
+  uploads that don't drop each other's files from the asset listing.
 - **Warm job with an expiring lock:** the addon sets `static_caching.warm_job` (when the site leaves
   it empty) to `StaticCaching\WarmJob`, Statamic's job with a one-hour unique lock. Statamic's
   lock never expires: a warm job removed from the queue without running blocked its URL for good.

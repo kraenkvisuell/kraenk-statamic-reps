@@ -2,20 +2,11 @@
 
 namespace Kraenkvisuell\StatamicReps;
 
-use Illuminate\Filesystem\AwsS3V3Adapter;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Storage;
 use Kraenkvisuell\StatamicReps\Console\Commands;
-use Kraenkvisuell\StatamicReps\Imaging\OriginalGifManipulator;
 use Kraenkvisuell\StatamicReps\Listeners\AdjustBlueprints;
 use Kraenkvisuell\StatamicReps\Listeners\SyncRelations;
 use Kraenkvisuell\StatamicReps\Support\GlobalBlueprints;
-use Kraenkvisuell\StatamicReps\Support\RetryingReads;
-use League\Flysystem\Filesystem as Flysystem;
-use Statamic\Contracts\Assets\Asset;
-use Statamic\Contracts\Imaging\ImageManipulator;
-use Statamic\Contracts\Imaging\UrlBuilder;
 use Statamic\Events\EntryBlueprintFound;
 use Statamic\Events\EntrySaved;
 use Statamic\Events\EntrySaving;
@@ -68,6 +59,10 @@ class ServiceProvider extends AddonServiceProvider
         $defaults = require __DIR__.'/../config/kraenk-statamic-reps.php';
         $site = $this->app['config']->get('kraenk-statamic-reps', []);
         $this->app['config']->set('kraenk-statamic-reps', Reps::mergeConfig($defaults, $site));
+
+        // the Bunny parts live in kraenkvisuell/statamic-bunny-assets; the sites switch them here
+        $this->app['config']->set('statamic-bunny-assets.cdn_thumbnails', Reps::config('cp.cdn_thumbnails', true));
+        $this->app['config']->set('statamic-bunny-assets.original_gifs', Reps::config('imaging.original_gifs', true));
     }
 
     public function bootAddon(): void
@@ -81,7 +76,6 @@ class ServiceProvider extends AddonServiceProvider
         $this->loadJsonTranslationsFrom(__DIR__.'/../lang');
 
         $this->registerDisks();
-        $this->registerImaging();
         $this->registerLegacyConnection();
         $this->registerBlueprints();
 
@@ -97,9 +91,6 @@ class ServiceProvider extends AddonServiceProvider
         Event::listen(StaticCacheCleared::class, fn () => StaticCaching\BunnyPurge::all());
 
         $this->hideSpecialProjectsInNav();
-
-        // CP thumbnails from the Glide CDN once generated (see Imaging\CdnThumbnailAsset)
-        $this->app->bind(Asset::class, Imaging\CdnThumbnailAsset::class);
 
         Event::listen(EntryBlueprintFound::class, AdjustBlueprints::class);
         Event::listen(EntrySaved::class, SyncRelations::class);
@@ -117,7 +108,6 @@ class ServiceProvider extends AddonServiceProvider
         $this->app['router']->pushMiddlewareToGroup('statamic.web', Http\Middleware\RedirectOtherSiteSlugs::class);
     }
 
-    // GIFs keep their original file instead of a Glide copy (see OriginalGifManipulator)
     /**
      * Special projects are edited inside their special category (its projects field), so the
      * collection has no entry of its own under Collections in the CP nav. Matched by URL: the
@@ -137,28 +127,10 @@ class ServiceProvider extends AddonServiceProvider
         });
     }
 
-    protected function registerImaging(): void
-    {
-        if (Reps::config('imaging.original_gifs', true)) {
-            $this->app->bind(ImageManipulator::class, fn ($app) => new OriginalGifManipulator($app->make(UrlBuilder::class)));
-        }
-    }
-
     // disks of the config (Bunny, the local mirror, the old media bucket) unless the site defines them
     protected function registerDisks(): void
     {
-        // the S3 driver with retried reads (Support\RetryingReads): Bunny's replicas are sometimes
-        // out of step and answer 404 or an error for files that exist
-        Storage::extend('bunny', function ($app, array $config) {
-            $s3 = Storage::createS3Driver($config);
-            $adapter = new RetryingReads($s3->getAdapter(), $config['retries'] ?? 3, $config['retry_delay'] ?? 500);
-            $filesystem = new Flysystem($adapter, Arr::only($config, [
-                'directory_visibility', 'disable_asserts', 'retain_visibility', 'temporary_url', 'url', 'visibility',
-            ]));
-
-            return new AwsS3V3Adapter($filesystem, $s3->getAdapter(), $s3->getConfig(), $s3->getClient());
-        });
-
+        // `'driver' => 'bunny'` (S3 with retried reads) comes from statamic-bunny-assets
         foreach (Reps::config('disks', []) as $name => $disk) {
             if (! $disk || config("filesystems.disks.$name")) {
                 continue;

@@ -107,7 +107,7 @@ return [
         'listing_videos' => false,
         'slideshow_thumbnails' => 99,      // works shown per slideshow in the artist's slideshows field
         // thumbnails from the Glide cache's CDN once generated, instead of a PHP request each
-        // (Imaging\CdnThumbnailAsset; only when Glide serves its cache directly, e.g. from Bunny)
+        // (statamic-bunny-assets's Assets\CdnThumbnailAsset; only when Glide serves its cache directly, e.g. from Bunny)
         'cdn_thumbnails' => true,
         // orderable collections whose CP listing starts with a position select (Cp\PositionColumn)
         'position_columns' => [],
@@ -201,7 +201,7 @@ return [
             'root' => 'assets',
             'use_path_style_endpoint' => true,
             'throw' => false,
-            'retries' => 3,         // failed reads, after 0.5 / 1 / 2 s (driver bunny: S3 + RetryingReads)
+            'retries' => 3,         // failed reads, after 0.5 / 1 / 2 s (driver bunny from statamic-bunny-assets: S3 + retried reads)
             'retry_delay' => 500,
         ],
         'bunny-glide-cache' => [
@@ -215,7 +215,7 @@ return [
             'root' => 'glide-cache',
             'use_path_style_endpoint' => true,
             'throw' => false,
-            'retries' => 3,         // failed reads, after 0.5 / 1 / 2 s (driver bunny: S3 + RetryingReads)
+            'retries' => 3,         // failed reads, after 0.5 / 1 / 2 s (driver bunny from statamic-bunny-assets: S3 + retried reads)
             'retry_delay' => 500,
         ],
         // the local mirror of the old originals and the container's disk until it moves to Bunny

@@ -71,7 +71,7 @@ class Slideshows extends Entries
                 }
 
                 // makeAsset: no lookup of the file, the thumbnail URL only needs the cached meta
-                // (Glide CDN once generated, see Imaging\CdnThumbnailAsset)
+                // (Glide CDN once generated, see statamic-bunny-assets)
                 return ['image' => $assets
                     ? $assets->makeAsset($path)->thumbnailUrl('small')
                     : cp_route('assets.thumbnails.show', ['encoded_asset' => base64_encode($id), 'size' => 'small'])];
