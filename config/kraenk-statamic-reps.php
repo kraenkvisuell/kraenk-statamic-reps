@@ -264,10 +264,11 @@ return [
     */
     'static_caching' => [
         'warm_queue' => null,
-        // The address warm requests connect to instead of the domain's DNS (the server itself,
-        // 127.0.0.1): behind a CDN that ignores query strings, re-cache requests would otherwise
-        // be answered with the CDN's old copy and never reach the server. null: the domain.
-        'warm_ip' => env('REPS_WARM_IP'),
+        // The address warm requests connect to instead of the domain's DNS: the server itself, so
+        // they never go through the CDN (which ignores query strings and would answer re-cache
+        // requests with its old copy, and whose timeout cuts off slow first renders). Empty
+        // (REPS_WARM_IP=) for the domain, e.g. when the queue runs on another machine than the site.
+        'warm_ip' => env('REPS_WARM_IP', '127.0.0.1'),
         // The Bunny pull zone in front of the site: re-cached and invalidated pages are purged
         // there right away, the whole zone when the static cache is cleared (StaticCaching\BunnyPurge).
         // An account API key (Account settings → API key) and the pull zone's id. Empty: off.

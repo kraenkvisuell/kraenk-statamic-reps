@@ -188,12 +188,14 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   script before `reps:warm`. Metadata edited in another environment (the bucket is shared) stays
   cached until `php artisan cache:clear asset_meta`.
 - **Re-caching the site:** `reps:warm [--queue] [--insecure] [--dry-run]` clears the static cache
-  and warms only the pages visitors see first, in this order: the home page(s), every internal link
-  in the home page's `<nav>` elements (the menu, whatever builds it), the published artists,
-  categories and special projects. Every
-  language (simple translations) or site. Everything else is cached on its first visit. Deploys run
-  it, and so should a site's invalidator wherever a save changes every page (menus, globals …),
-  instead of re-caching thousands of pages. Queued, Horizon renders the pages in that order. With
+  and warms the pages in the order visitors reach them: the home page(s), every internal link in
+  the home page's `<nav>` elements (the menu, whatever builds it), the home page's other internal
+  links (news, teasers), the published artists, categories and special projects, then every
+  published project of every published artist (artists by name, projects in the artist's order).
+  A URL is warmed once, in the first tier that lists it, so a tier whose pages are all in the menu
+  shows 0 URLs. Every language (simple translations) or site. Everything else is cached on its
+  first visit. Deploys run it, and so should a site's invalidator wherever a save changes every
+  page (menus, globals …). Queued, Horizon renders the pages in that order. With
   `--queue` it first clears its queue (`static_caching.warm_queue`, give it a queue of its own,
   e.g. `warm`) and releases the unique locks of the jobs it drops (`queue:clear` leaves them
   behind; the new run's jobs for the same URLs would be dropped silently).
@@ -202,10 +204,13 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   the same URL), and Statamic's `warm_queue` (e.g. `recache`) only carries the re-caching of single
   pages after saves. Let Horizon take the queues in order without balancing
   (`'queue' => ['recache', 'default', 'warm']`, `'balance' => false`).
-- **Warm requests past the CDN:** with `static_caching.warm_ip` (`REPS_WARM_IP=127.0.0.1`) every warm
-  request (reps:warm, Statamic's re-caching) connects to the server itself instead of the domain's
-  DNS. Behind a CDN that ignores query strings in its cache key (Bunny), the re-cache request
-  (`?__recache=…`) would get the CDN's old copy and the page would never be rendered again.
+- **Warm requests past the CDN:** every warm request (reps:warm, Statamic's re-caching) connects to
+  the server itself (`static_caching.warm_ip`, `REPS_WARM_IP`, default `127.0.0.1`) instead of the
+  domain's DNS, with the domain's name and certificate. Behind a CDN that ignores query strings in
+  its cache key (Bunny), the re-cache request (`?__recache=…`) would get the CDN's old copy and the
+  page would never be rendered again, and the CDN's timeout cuts off slow first renders (a 504
+  instead of a cached page). `REPS_WARM_IP=` (empty) goes through the domain again, for a queue
+  that runs on another machine than the site (since v0.2.5; before, the default was the domain).
 - **Bunny purges:** with `static_caching.bunny` (`BUNNY_API_KEY`, `BUNNY_PULL_ZONE_ID`) the pull zone
   in front of the site follows the static cache: every URL a warm job has just rendered and every
   invalidated URL is purged, the whole zone when the static cache is cleared (`reps:warm`,

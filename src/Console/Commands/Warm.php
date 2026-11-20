@@ -16,6 +16,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
+use Kraenkvisuell\StatamicReps\Portfolio;
 use Kraenkvisuell\StatamicReps\Reps;
 use Kraenkvisuell\StatamicReps\StaticCaching\BunnyPurge;
 use Kraenkvisuell\StatamicReps\StaticCaching\DeployWarmJob;
@@ -28,10 +30,12 @@ use Statamic\StaticCaching\Cacher;
 use Throwable;
 
 /**
- * Re-caches the site: clears the static cache, then warms the pages visitors see first, in this
- * order: the home page(s), every page linked in the menu (the home page's <nav> elements, so it
- * follows the menu whatever builds it), the artists, the categories, the special projects. Every language (simple translations' /de,
- * /en, or every site). Everything else is cached on its first visit.
+ * Re-caches the site: clears the static cache, then warms the pages in the order visitors reach
+ * them: the home page(s), every page linked in the menu (the home page's <nav> elements, so it
+ * follows the menu whatever builds it), the other pages the home page links to (news, teasers),
+ * the artists, the categories, the special projects, then every published project of every
+ * published artist. Every language (simple translations' /de, /en, or every site). A URL is
+ * warmed once, in the first tier that lists it. Everything else is cached on its first visit.
  *
  * Deploys run it, and a save that changes every page (menus, globals …) should too, instead of
  * re-caching thousands of pages. Queued (--queue), the jobs go to
@@ -39,7 +43,7 @@ use Throwable;
  * dropped first (see clearQueue()). Without --queue the pages are requested right away.
  */
 #[Signature('reps:warm {--queue : Queue the requests (Horizon renders them in this order)} {--insecure : Skip SSL verification} {--dry-run : Only list the pages, clear nothing}')]
-#[Description('Clear the static cache and warm the home page, the menu pages, the artists, the categories and the special projects')]
+#[Description('Clear the static cache and warm the home page, the menu, the home page links, the artists, the categories, the special projects and the projects')]
 class Warm extends Command
 {
     public function handle(Cacher $cacher): int
@@ -60,10 +64,12 @@ class Warm extends Command
 
         $tiers = collect([
             'home' => $this->homePaths(),
-            'menu' => fn () => $this->menuPaths(),
+            'menu' => fn () => $this->homeLinks('//nav//a[@href]'),
+            'home page links' => fn () => $this->homeLinks('//a[@href]'),
             'artists' => fn () => $this->entryPaths('artists'),
             'categories' => fn () => $this->entryPaths('categories'),
             'special projects' => fn () => $this->entryPaths('special_projects'),
+            'projects' => fn () => $this->projectPaths(),
         ]);
 
         $done = collect();
@@ -200,44 +206,59 @@ class Warm extends Command
         return Site::all()->map(fn ($site) => $this->path($site->absoluteUrl()))->values()->all();
     }
 
-    /** Internal links in the <nav> elements of every home page. */
-    protected function menuPaths(): Collection
+    /** @var array<string, string> the rendered home pages, fetched once for the link tiers */
+    protected array $homeHtml = [];
+
+    /** Internal links of every home page that the XPath selects (the menu: the links inside <nav>). */
+    protected function homeLinks(string $xpath): Collection
     {
-        return collect($this->homePaths())->flatMap(function ($home) {
-            try {
-                $url = URL::makeAbsolute($home);
-                $options = $this->clientConfig();
-
-                if ($ip = Reps::config('static_caching.warm_ip')) {
-                    $options['curl'][CURLOPT_RESOLVE] = [WarmJob::resolve($url, $ip)];
-                }
-
-                $response = Http::withOptions($options)->get($url);
-            } catch (Throwable $e) {
-                $this->warn("$home: ".$e->getMessage());
-
-                return [];
-            }
-
-            if (! $response->successful()) {
-                $this->warn("$home: HTTP {$response->status()}");
-
-                return [];
-            }
-
-            return $this->navLinks($response->body());
-        })->map(fn ($href) => $this->path($href))->filter()->values();
+        return collect($this->homePaths())
+            ->flatMap(fn ($home) => $this->links($this->homeHtml[$home] ??= $this->fetch($home), $xpath))
+            ->map(fn ($href) => $this->path($href))
+            ->filter()
+            ->values();
     }
 
-    /** @return list<string> hrefs of the links inside <nav> elements */
-    protected function navLinks(string $html): array
+    /** The rendered page, '' when it can't be fetched. */
+    protected function fetch(string $home): string
     {
+        $url = URL::makeAbsolute($home);
+        $options = $this->clientConfig();
+
+        if ($ip = Reps::config('static_caching.warm_ip')) {
+            $options['curl'][CURLOPT_RESOLVE] = [WarmJob::resolve($url, $ip)];
+        }
+
+        try {
+            $response = Http::withOptions($options)->get($url);
+        } catch (Throwable $e) {
+            $this->warn("$home: ".$e->getMessage());
+
+            return '';
+        }
+
+        if (! $response->successful()) {
+            $this->warn("$home: HTTP {$response->status()}");
+
+            return '';
+        }
+
+        return $response->body();
+    }
+
+    /** @return list<string> hrefs of the links the XPath selects */
+    protected function links(string $html, string $xpath): array
+    {
+        if ($html === '') {
+            return [];
+        }
+
         $dom = new \DOMDocument;
         @$dom->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING);
 
         $links = [];
 
-        foreach ((new \DOMXPath($dom))->query('//nav//a[@href]') as $link) {
+        foreach ((new \DOMXPath($dom))->query($xpath) as $link) {
             $links[] = $link->getAttribute('href');
         }
 
@@ -247,15 +268,29 @@ class Warm extends Command
     /** The published entries of a collection with a page (artists, categories), in every language (or site). */
     protected function entryPaths(string $collection): Collection
     {
-        $entries = Entry::query()->where('collection', $collection)->where('published', true)->get();
+        return Entry::query()->where('collection', $collection)->where('published', true)->get()
+            ->flatMap(fn ($entry) => $this->entryUrls($entry))
+            ->values();
+    }
 
-        return $entries->flatMap(function ($entry) {
-            $urls = SimpleTranslations::enabled()
-                ? collect(Languages::codes())->map(fn ($code) => Languages::in($code, fn () => $entry->url()))
-                : collect([$entry->url()]);
+    /** Every published project of every published artist: artists by name, projects in the artist's order. */
+    protected function projectPaths(): Collection
+    {
+        return Entry::query()->where('collection', 'artists')->where('published', true)->get()
+            ->sortBy(fn ($artist) => Str::lower(Str::ascii((string) $artist->get('title'))))
+            ->flatMap(fn ($artist) => Portfolio::slideshows($artist))
+            ->flatMap(fn ($slideshow) => $this->entryUrls($slideshow))
+            ->values();
+    }
 
-            return $urls->map(fn ($url) => $this->path($url));
-        })->filter()->values();
+    /** @return Collection<int, string> the entry's paths in every language (or its site) */
+    protected function entryUrls($entry): Collection
+    {
+        $urls = SimpleTranslations::enabled()
+            ? collect(Languages::codes())->map(fn ($code) => Languages::in($code, fn () => $entry->url()))
+            : collect([$entry->url()]);
+
+        return $urls->map(fn ($url) => $this->path($url))->filter();
     }
 
     /** The path of an internal URL ('/de/news'), null for other hosts, anchors, mailto: … */
