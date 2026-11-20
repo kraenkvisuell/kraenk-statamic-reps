@@ -93,11 +93,16 @@ class Portfolio
         return Blink::once('reps-items-'.$slideshow->id(), function () use ($slideshow, $artist) {
             $artist ??= static::artist(static::ids($slideshow, 'artist')[0] ?? null);
 
-            return collect($slideshow->root()->get('works', []))
-                ->filter(fn ($work) => $work['enabled'] ?? true)
-                ->values()
-                ->map(fn ($work, $i) => static::item($work, $i + 1, $slideshow, $artist));
+            return static::works($slideshow)->map(fn ($work, $i) => static::item($work, $i + 1, $slideshow, $artist));
         });
+    }
+
+    /** The enabled work rows of a slideshow (raw, from the origin), keyed 0… by position. */
+    public static function works(EntryContract $slideshow): Collection
+    {
+        return collect($slideshow->root()->get('works', []))
+            ->filter(fn ($work) => $work['enabled'] ?? true)
+            ->values();
     }
 
     public static function item(array $work, int $position, EntryContract $slideshow, ?EntryContract $artist): array
@@ -237,14 +242,25 @@ class Portfolio
                     return null;
                 }
 
+                // choose from the raw rows and build items (asset, ratio) only for the chosen works:
+                // items() would resolve every work of every slideshow in the category
                 $order = static::ids($artist, 'slideshows');
-                $items = $slideshows
+                $rows = $slideshows
                     ->sortBy(fn ($s) => array_search($s->root()->id(), $order))
-                    ->flatMap(fn ($s) => static::items($s, $artist));
-                $chosen = $items->filter(fn ($item) => in_array($category->root()->id(), (array) ($item['work']['represents_in'] ?? []), true));
+                    ->map(fn ($s) => static::local($s))
+                    ->flatMap(fn ($s) => static::works($s)->map(fn ($work, $i) => [$s, $work, $i + 1]));
+                $item = fn ($row) => static::item($row[1], $row[2], $row[0], $artist);
+                $chosen = $rows
+                    ->filter(fn ($row) => in_array($category->root()->id(), (array) ($row[1]['represents_in'] ?? []), true))
+                    ->map($item);
 
                 if ($chosen->isEmpty() && $fallback) {
-                    $chosen = $items->filter(fn ($item) => $item['asset'])->take($fallback);
+                    $chosen = $rows->lazy()
+                        ->filter(fn ($row) => ! empty($row[1]['file']))
+                        ->map($item)
+                        ->filter(fn ($item) => $item['asset'])
+                        ->take($fallback)
+                        ->collect();
                 }
 
                 return $chosen->isEmpty() ? null : ['artist' => $artist, 'items' => $chosen->values()->all()];
