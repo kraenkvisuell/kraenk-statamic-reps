@@ -228,11 +228,14 @@ Statamic.booted(() => {
             },
         },
         methods: {
-            // the top button adds the new slideshow at position 1, the bottom one at the end
+            // the top button adds the new slideshow at position 1, the bottom one at the end; the
+            // saved slideshow already joined the artist at the end (SyncRelations), so the top
+            // one is moved first on the server too (an artist without an id yet: 404, ignored)
             itemCreatedFirst(item) {
                 if (this.readOnly) return;
                 this.$emit('item-data-updated', [...this.data, item]);
                 this.update([item.id, ...(this.value || [])]);
+                this.$axios.post(Statamic.$config.get('cpUrl').replace(/\/$/, '') + '/reps/slideshows/' + item.id + '/first').catch(() => {});
             },
             addButton(key) {
                 return h('div', { key, class: 'flex justify-end' }, h(CreateButton, {
