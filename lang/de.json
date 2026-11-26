@@ -177,7 +177,7 @@
     "Show on the home page": "Auf Startseite zeigen",
     "Show title": "Titel zeigen",
     "Shown in the browser tab and in search results. Empty: the title.": "Erscheint im Browser-Tab und in Suchergebnissen. Leer: der Titel.",
-    "Shown on the news item. The title is generated from the artist and project.": "Wird auf der News angezeigt. Der Titel wird aus Künstler und Bildstrecke gebildet.",
+    "Shown on the news item. If empty, the artist and the slideshow (if set) are used.": "Wird auf der News angezeigt. Leer: Künstler und Bildstrecke (falls gesetzt).",
     "Sidebar": "Seitenleiste",
     "Site settings": "Einstellungen",
     "Site texts": "Website-Texte",

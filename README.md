@@ -73,6 +73,9 @@ position select as the first column of their CP listing (`Cp\PositionColumn`, a 
 Picking a position moves the entry there right away (`POST cp/reps/position/{id}`, needs the
 "reorder" permission) and reloads the listing. The order is saved through the collection's
 tree like a drag in the CP, so static caching invalidates as for any reorder.
+New entries of the orderable collections in `cp.new_entries_first` (e.g. `['news']`) start at
+position 1 instead of last (`Listeners\NewEntriesFirst`, on `EntryCreated`; quiet saves of the
+import and re-syncs keep their order).
 
 ## Simple translations (one site, kombinatrotweiss)
 

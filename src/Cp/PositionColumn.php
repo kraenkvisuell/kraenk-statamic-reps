@@ -94,7 +94,7 @@ class PositionColumn
             ->pluck('entry')->filter()->values()->all());
     }
 
-    protected static function blinkKey(CollectionContract $collection, string $site): string
+    public static function blinkKey(CollectionContract $collection, string $site): string
     {
         return "reps-positions-{$collection->handle()}-$site";
     }

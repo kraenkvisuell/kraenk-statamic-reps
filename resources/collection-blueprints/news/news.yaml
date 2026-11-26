@@ -6,7 +6,7 @@ tabs:
       -
         fields:
           - { handle: title, field: { type: text, display: Title, required: true, localizable: true } }
-          - { handle: headline, field: { type: text, display: Headline, instructions: 'Shown on the news item. The title is generated from the artist and project.', localizable: true, reps_feature: news_headline } }
+          - { handle: headline, field: { type: text, display: Headline, instructions: 'Shown on the news item. If empty, the artist and the slideshow (if set) are used.', localizable: true, reps_feature: news_headline } }
           - { handle: subtitle, field: { type: text, display: Subtitle, localizable: true, reps_feature: news_subtitle } }
           - { handle: type, field: { type: button_group, display: Type, options: { post: 'Blog post', artist_link: 'Link to artist', slideshow_link: 'Link to slideshow' }, default: post, listable: true, reps_feature: news_post_types } }
           - { handle: publish_date, field: { type: date, display: Date, reps_feature: news_articles } }
@@ -16,7 +16,7 @@ tabs:
           - { handle: overview_image, field: { type: assets, display: 'Overview image', container: main, max_files: 1, width: 50, reps_feature: news_articles } }
           - { handle: image_placeholder, field: { type: text, display: 'Text when there is no image', reps_feature: news_post_types } }
           - { handle: artist, field: { type: entries, display: Artist, collections: [artists], max_items: 1, mode: select, width: 50 } }
-          - { handle: slideshow, field: { type: entries, display: Slideshow, collections: [slideshows], max_items: 1, mode: select, width: 50 } }
+          - { handle: slideshow, field: { type: entries, display: Slideshow, collections: [slideshows], max_items: 1, mode: select, clearable: true, width: 50 } }
           - { handle: link, field: { type: link, display: 'Link (instead of the artist / slideshow)', reps_feature: news_link } }
           - { handle: is_sticky, field: { type: toggle, display: Sticky, width: 25, reps_feature: news_articles } }
           - { handle: show_logo_as_subline, field: { type: toggle, display: 'Logo as subline', width: 25, reps_feature: news_post_types } }
