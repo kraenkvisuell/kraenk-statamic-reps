@@ -109,6 +109,9 @@ return [
         'slideshow_thumbnails' => 99,      // works shown per slideshow in the artist's slideshows field
         // orderable collections whose CP listing starts with a position select (Cp\PositionColumn)
         'position_columns' => [],
+        // collections edited only inside their parent (an artist's slideshows field), left out of
+        // Collections in the CP nav; special_projects always are
+        'nested_collections' => [],
     ],
 
     /*

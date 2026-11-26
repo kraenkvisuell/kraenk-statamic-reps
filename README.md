@@ -122,10 +122,16 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   override a blueprint in `resources/blueprints/vendor/collections/<handle>/`. Global blueprints
   (`site_settings`, `seo`) are fallbacks. Computed values for routes: `artist_slug` (slideshows),
   `special_category_slug`, `discipline_slug` (artists), `route_segment` (categories).
-  `Listeners\SyncRelations` sets a slideshow's `artist` from the artist's `slideshows` (a special
-  project's `special_category` from `projects`); `Listeners\RemoveDeletedChildren` takes a deleted
-  slideshow / special project off that list (Statamic doesn't remove entry references, and the CP
-  showed the row as "This item is unavailable"). Classes in `src/Listeners` register themselves.
+  `Listeners\SyncRelations` keeps both sides of artist `slideshows` ↔ slideshow `artist` (special
+  category `projects` ↔ special project `special_category`): saving the parent sets the children's
+  field; "Add slideshow" opens the create form with the (hidden) artist filled in, and the saved
+  slideshow joins the artist's list even when the artist form isn't saved; an artist's list always
+  holds every slideshow pointing at it (a form opened before a slideshow was added can't drop it).
+  `Listeners\RemoveDeletedChildren` takes a deleted slideshow / special project off the list
+  (Statamic doesn't remove entry references; the CP showed "This item is unavailable"), and
+  `Listeners\LogDeletions` logs every deleted entry with the user. `cp.nested_collections` (e.g.
+  `['slideshows']`) leaves collections edited inside their parent out of the CP nav, like
+  `special_projects`. Classes in `src/Listeners` register themselves.
 - **`reps:install`** writes the structure files the config describes, touching only the keys it
   manages. Repeatable.
 - **`reps:import`** imports the old Nova site from its dump on the `legacy` connection

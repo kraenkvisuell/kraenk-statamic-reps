@@ -2,6 +2,7 @@
 
 namespace Kraenkvisuell\StatamicReps\Fieldtypes;
 
+use Kraenkvisuell\StatamicReps\Listeners\SyncRelations;
 use Kraenkvisuell\StatamicReps\Portfolio;
 use Kraenkvisuell\StatamicReps\Reps;
 use Statamic\Contracts\Entries\Entry as EntryContract;
@@ -32,6 +33,27 @@ class Slideshows extends Entries
             // translated in cp.js ("Add :label"): the CP's JS has the addon's lang/de.json
             'reps_label' => Reps::label('slideshow'),
         ]);
+    }
+
+    /**
+     * "Add slideshow" opens the create form with the artist filled in (`?values[artist][]=`), so
+     * the new slideshow joins the artist when it's saved (SyncRelations), whether or not the
+     * artist form is saved afterwards. A new artist has no id yet: saving it links its slideshows.
+     */
+    protected function getCreatables()
+    {
+        $parent = $this->field?->parent();
+        $relation = $parent instanceof EntryContract ? (SyncRelations::RELATIONS[$parent->collectionHandle()] ?? null) : null;
+
+        if (! $relation || ! $parent->id()) {
+            return parent::getCreatables();
+        }
+
+        $query = http_build_query(['values' => [$relation['parent'] => [$parent->root()->id()]]]);
+
+        return collect(parent::getCreatables())
+            ->map(fn ($creatable) => [...$creatable, 'url' => $creatable['url'].(str_contains($creatable['url'], '?') ? '&' : '?').$query])
+            ->all();
     }
 
     protected function toItemArray($id)

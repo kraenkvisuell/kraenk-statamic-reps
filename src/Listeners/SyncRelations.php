@@ -3,20 +3,29 @@
 namespace Kraenkvisuell\StatamicReps\Listeners;
 
 use Kraenkvisuell\StatamicReps\Reps;
+use Statamic\Contracts\Entries\Entry as EntryContract;
 use Statamic\Events\EntrySaved;
 use Statamic\Facades\Entry;
 
 /**
- * Keeps the inverse side of the parent → children relations editors maintain on the parent:
- * an artist's `slideshows` set each slideshow's `artist`; a special category's `projects` set
- * each project's `special_category`. With `artist_categories_order`, the artist's categories
- * follow its slideshows (new ones appended, the editor's order kept).
+ * Keeps both sides of the parent → children relations editors maintain on the parent: an
+ * artist's `slideshows` and each slideshow's `artist`; a special category's `projects` and each
+ * project's `special_category`. Saving the parent sets the children's parent field; saving a new
+ * child (created with "Add" in the parent, which pre-fills the parent field, see
+ * Fieldtypes\Slideshows) adds it to the parent's list, so it's there even when the parent form
+ * isn't saved afterwards. With `artist_categories_order`, the artist's categories follow its
+ * slideshows (new ones appended, the editor's order kept).
+ *
+ * `complete`: the parent's list always holds every child that points at it. The artist's
+ * slideshows field has no unlink for existing slideshows (resources/js/cp.js), so a slideshow
+ * missing from the list was dropped by a form opened before it was created; saving that form
+ * (or the slideshow) puts it back. Special categories can unlink, so only new projects are added.
  */
 class SyncRelations
 {
     public const RELATIONS = [
-        'artists' => ['slideshows', 'artist'],
-        'special_categories' => ['projects', 'special_category'],
+        'artists' => ['field' => 'slideshows', 'children' => 'slideshows', 'parent' => 'artist', 'complete' => true],
+        'special_categories' => ['field' => 'projects', 'children' => 'special_projects', 'parent' => 'special_category', 'complete' => false],
     ];
 
     // the importer sets both sides itself
@@ -24,30 +33,82 @@ class SyncRelations
 
     public function handle(EntrySaved $event): void
     {
-        if (! static::$enabled) {
+        $entry = $event->entry;
+
+        if (! static::$enabled || ! $entry->isRoot()) {
             return;
         }
 
-        $entry = $event->entry;
         $collection = $entry->collectionHandle();
 
-        if (! isset(static::RELATIONS[$collection]) || ! $entry->isRoot()) {
-            return;
+        if (isset(static::RELATIONS[$collection])) {
+            $this->syncChildren($entry, static::RELATIONS[$collection]);
+        } elseif ($relation = static::relationOfChild($collection)) {
+            $this->syncParent($entry, $relation);
         }
+    }
 
-        [$childrenField, $parentField] = static::RELATIONS[$collection];
+    /** The relation a collection is the children's side of. */
+    public static function relationOfChild(string $collection): ?array
+    {
+        return collect(static::RELATIONS)->first(fn ($relation) => $relation['children'] === $collection);
+    }
 
-        foreach ((array) $entry->get($childrenField, []) as $childId) {
+    protected function syncChildren(EntryContract $parent, array $relation): void
+    {
+        $ids = (array) $parent->get($relation['field'], []);
+
+        foreach ($ids as $childId) {
             $child = Entry::find($childId);
 
             // also re-saved when the parent's slug changed, so the child's URI follows
-            if ($child && ($child->get($parentField) !== $entry->id() || ! str_contains((string) $child->uri(), '/'.$entry->slug().'/'))) {
-                $child->set($parentField, $entry->id())->saveQuietly();
+            if ($child && ($child->get($relation['parent']) !== $parent->id() || ! str_contains((string) $child->uri(), '/'.$parent->slug().'/'))) {
+                $child->set($relation['parent'], $parent->id())->saveQuietly();
             }
         }
 
-        if ($collection === 'artists' && Reps::feature('artist_categories_order')) {
-            $this->syncArtistCategories($entry);
+        if ($relation['complete']) {
+            $missing = Entry::query()
+                ->where('collection', $relation['children'])
+                ->where($relation['parent'], $parent->id())
+                ->get()
+                ->filter(fn ($child) => $child->isRoot() && ! in_array($child->id(), $ids, true))
+                ->map->id()->values()->all();
+
+            if ($missing) {
+                $parent->set($relation['field'], [...$ids, ...$missing])->saveQuietly();
+            }
+        }
+
+        $this->parentChanged($parent);
+    }
+
+    protected function syncParent(EntryContract $child, array $relation): void
+    {
+        // new: never saved before this save (the original values are only set after it)
+        if (! $relation['complete'] && $child->getOriginal() !== []) {
+            return;
+        }
+
+        $parentId = collect((array) $child->get($relation['parent']))->first();
+        $parent = $parentId ? Entry::find($parentId) : null;
+
+        if (! $parent || ! $parent->isRoot() || $parent->collectionHandle() !== array_search($relation, static::RELATIONS, true)) {
+            return;
+        }
+
+        $ids = (array) $parent->get($relation['field'], []);
+
+        if (! in_array($child->id(), $ids, true)) {
+            $parent->set($relation['field'], [...$ids, $child->id()])->saveQuietly();
+            $this->parentChanged($parent);
+        }
+    }
+
+    protected function parentChanged(EntryContract $parent): void
+    {
+        if ($parent->collectionHandle() === 'artists' && Reps::feature('artist_categories_order')) {
+            $this->syncArtistCategories($parent);
         }
     }
 

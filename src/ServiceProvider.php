@@ -81,7 +81,7 @@ class ServiceProvider extends AddonServiceProvider
         Event::listen(UrlInvalidated::class, fn (UrlInvalidated $event) => StaticCaching\BunnyPurge::url($event->url));
         Event::listen(StaticCacheCleared::class, fn () => StaticCaching\BunnyPurge::all());
 
-        $this->hideSpecialProjectsInNav();
+        $this->hideNestedCollectionsInNav();
 
         // the classes in src/Listeners register themselves (Statamic discovers them by their handle()
         // type); listening to them here as well ran every one of them twice
@@ -99,21 +99,23 @@ class ServiceProvider extends AddonServiceProvider
     }
 
     /**
-     * Special projects are edited inside their special category (its projects field), so the
-     * collection has no entry of its own under Collections in the CP nav. Matched by URL: the
-     * collection's title differs between sites.
+     * Special projects (and the `cp.nested_collections`, e.g. slideshows) are edited inside their
+     * parent (a special category's projects, an artist's slideshows), so the collection has no
+     * entry of its own under Collections in the CP nav. Matched by URL: the collection's title
+     * differs between sites.
      */
-    protected function hideSpecialProjectsInNav(): void
+    protected function hideNestedCollectionsInNav(): void
     {
         Nav::extend(function ($nav) {
-            $collection = Collection::findByHandle('special_projects');
-            $parent = $collection ? $nav->find('Content', 'Collections') : null;
+            $urls = collect(['special_projects', ...(array) Reps::config('cp.nested_collections', [])])
+                ->map(fn ($handle) => Collection::findByHandle($handle)?->showUrl())->filter()->all();
+            $parent = $urls ? $nav->find('Content', 'Collections') : null;
 
             if (! $parent || ! $children = $parent->resolveChildren()->children()) {
                 return;
             }
 
-            $parent->children($children->reject(fn ($item) => $item->url() === $collection->showUrl()));
+            $parent->children($children->reject(fn ($item) => in_array($item->url(), $urls, true)));
         });
     }
 

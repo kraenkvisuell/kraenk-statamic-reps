@@ -21,14 +21,14 @@ class RemoveDeletedChildren
             return;
         }
 
-        foreach (SyncRelations::RELATIONS as $collection => [$childrenField]) {
+        foreach (SyncRelations::RELATIONS as $collection => $relation) {
             Entry::query()
                 ->where('collection', $collection)
-                ->whereJsonContains($childrenField, $entry->id())
+                ->whereJsonContains($relation['field'], $entry->id())
                 ->get()
                 ->filter(fn ($parent) => $parent->isRoot())
                 ->each(fn ($parent) => $parent
-                    ->set($childrenField, array_values(array_diff((array) $parent->get($childrenField, []), [$entry->id()])))
+                    ->set($relation['field'], array_values(array_diff((array) $parent->get($relation['field'], []), [$entry->id()])))
                     ->saveQuietly());
         }
     }
