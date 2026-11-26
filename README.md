@@ -122,6 +122,10 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   override a blueprint in `resources/blueprints/vendor/collections/<handle>/`. Global blueprints
   (`site_settings`, `seo`) are fallbacks. Computed values for routes: `artist_slug` (slideshows),
   `special_category_slug`, `discipline_slug` (artists), `route_segment` (categories).
+  `Listeners\SyncRelations` sets a slideshow's `artist` from the artist's `slideshows` (a special
+  project's `special_category` from `projects`); `Listeners\RemoveDeletedChildren` takes a deleted
+  slideshow / special project off that list (Statamic doesn't remove entry references, and the CP
+  showed the row as "This item is unavailable"). Classes in `src/Listeners` register themselves.
 - **`reps:install`** writes the structure files the config describes, touching only the keys it
   manages. Repeatable.
 - **`reps:import`** imports the old Nova site from its dump on the `legacy` connection

@@ -4,11 +4,7 @@ namespace Kraenkvisuell\StatamicReps;
 
 use Illuminate\Support\Facades\Event;
 use Kraenkvisuell\StatamicReps\Console\Commands;
-use Kraenkvisuell\StatamicReps\Listeners\AdjustBlueprints;
-use Kraenkvisuell\StatamicReps\Listeners\SyncRelations;
 use Kraenkvisuell\StatamicReps\Support\GlobalBlueprints;
-use Statamic\Events\EntryBlueprintFound;
-use Statamic\Events\EntrySaved;
 use Statamic\Events\EntrySaving;
 use Statamic\Events\GlobalVariablesBlueprintFound;
 use Statamic\Events\GlobalVariablesSaved;
@@ -87,10 +83,9 @@ class ServiceProvider extends AddonServiceProvider
 
         $this->hideSpecialProjectsInNav();
 
-        Event::listen(EntryBlueprintFound::class, AdjustBlueprints::class);
-        Event::listen(EntrySaved::class, SyncRelations::class);
+        // the classes in src/Listeners register themselves (Statamic discovers them by their handle()
+        // type); listening to them here as well ran every one of them twice
         Event::listen(EntrySaving::class, [Translations\Listener::class, 'entrySaving']);
-        Event::listen(EntrySaving::class, Listeners\NewsSlug::class);
         Event::listen(GlobalVariablesSaving::class, [Translations\Listener::class, 'globalsSaving']);
         Event::listen(GlobalVariablesSaved::class, [Translations\Listener::class, 'globalsSaved']);
         // global blueprints have no parent; translatable fields need the variables to find the other sites

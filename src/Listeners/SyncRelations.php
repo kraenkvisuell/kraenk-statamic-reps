@@ -14,7 +14,7 @@ use Statamic\Facades\Entry;
  */
 class SyncRelations
 {
-    protected const RELATIONS = [
+    public const RELATIONS = [
         'artists' => ['slideshows', 'artist'],
         'special_categories' => ['projects', 'special_category'],
     ];
