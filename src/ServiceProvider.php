@@ -47,6 +47,34 @@ class ServiceProvider extends AddonServiceProvider
         'cp' => __DIR__.'/../routes/cp.php',
     ];
 
+    /**
+     * The CP script and stylesheet are published with a hash of their content in the file name
+     * (`cp.<hash>.js`) instead of Statamic's `cp.js?v=<version>`: a CDN in front of the site that
+     * ignores query strings (the Bunny pull zones) served the old file under the new version, and
+     * browsers then kept it for its max-age, so a release's CP changes didn't show up.
+     */
+    public function registerScript(string $path)
+    {
+        $this->registerVersionedAsset($path, 'js', fn ($name, $file) => Statamic::script($name, $file));
+    }
+
+    public function registerStylesheet(string $path)
+    {
+        $this->registerVersionedAsset($path, 'css', fn ($name, $file) => Statamic::style($name, $file));
+    }
+
+    protected function registerVersionedAsset(string $path, string $type, callable $register): void
+    {
+        $name = $this->getAddon()->packageName();
+        $hash = substr(md5_file($path), 0, 12);
+        $file = pathinfo($path, PATHINFO_FILENAME).".{$hash}.{$type}";
+
+        $this->publishes([$path => public_path("vendor/{$name}/{$type}/{$file}")], $this->getAddon()->slug());
+
+        // `?v=` keeps Statamic from appending a random version of its own
+        $register($name, "{$file}?v={$hash}");
+    }
+
     public function register(): void
     {
         parent::register();

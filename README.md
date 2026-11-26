@@ -192,7 +192,9 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   looks for them in the slideshows by Nova id; `cp.listing_videos` plays videos in the image columns
   instead of a file icon (`reps_listing_assets` fieldtype).
   HTML cells use the `reps_html` fieldtype, whose index component is in `resources/js/cp.js` (plain
-  JS, no build; published to `public/vendor/kraenk-statamic-reps` by `statamic:install`).
+  JS, no build; published to `public/vendor/kraenk-statamic-reps` by `statamic:install` as
+  `cp.<content hash>.js`, like `cp.css`: Bunny pull zones ignore query strings, so Statamic's
+  `cp.js?v=<version>` was served the previous release's file, and browsers kept it for its max-age).
 - **Asset metadata cache:** every image a page renders needs its asset's metadata (`.meta/*.yaml` on
   Bunny); uncached that's one Bunny request per image, minutes for an artist page. Sites give it a
   cache store of its own (`asset_meta` in `config/cache.php`), which `cache:clear` – run by composer's
