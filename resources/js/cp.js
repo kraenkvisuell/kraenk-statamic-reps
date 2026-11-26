@@ -128,12 +128,24 @@ Statamic.booted(() => {
                     .finally(() => (this.deleting = false));
             },
 
-            // after editing in the stack: categories and works may have changed too
-            itemUpdated(data) {
-                Base.methods.itemUpdated.call(this, data);
+            refresh() {
                 const params = this.reps.category ? { category: this.reps.category } : {};
                 this.$axios.get(url(this.item.id), { params }).then(({ data }) => (this.item.reps = data.reps));
             },
+
+            // after editing in the stack: categories and works may have changed too
+            itemUpdated(data) {
+                Base.methods.itemUpdated.call(this, data);
+                this.refresh();
+            },
+        },
+
+        // a slideshow just created with "Add slideshow" comes from the create form's response,
+        // without the row's details (works, thumbnails, categories): load them
+        mounted() {
+            if (!this.item.reps && !this.item.invalid) {
+                this.refresh();
+            }
         },
 
         render() {
@@ -165,7 +177,7 @@ Statamic.booted(() => {
                     ? h('video', { src: thumbnail.video, autoplay: true, muted: true, loop: true, playsinline: true, class: 'h-12 w-auto rounded-sm' })
                     : h('img', { src: thumbnail.image, loading: 'lazy', class: 'h-12 w-auto rounded-sm' })));
 
-            const works = valid
+            const works = valid && item.reps
                 ? ui('button', {
                     size: 'xs',
                     variant: reps.works ? 'primary' : 'danger',
