@@ -10,6 +10,7 @@ use Kraenkvisuell\StatamicReps\Translations\SimpleTranslations;
 use Kraenkvisuell\StatamicReps\Translations\Translations;
 use Statamic\Events\EntryBlueprintFound;
 use Statamic\Facades\Fieldset;
+use Statamic\Statamic;
 
 /**
  * Fits the addon's blueprints to the site's config: inlines the addon fieldsets, removes fields
@@ -23,7 +24,13 @@ class AdjustBlueprints
         $blueprint = $event->blueprint;
         $collection = preg_replace('~^collections[./]~', '', (string) $blueprint->namespace());
 
-        if (! Reps::hasCollection($collection) || ($blueprint->contents()['reps_adjusted'] ?? false)) {
+        if (! Reps::hasCollection($collection)) {
+            return;
+        }
+
+        if ($blueprint->contents()['reps_adjusted'] ?? false) {
+            static::artistSelect($blueprint, $collection, $event->entry);
+
             return;
         }
 
@@ -40,12 +47,34 @@ class AdjustBlueprints
         }
 
         $blueprint->setContents($contents);
+        static::artistSelect($blueprint, $collection, $event->entry);
 
         // the translated fields exist only now; simple-statamic-translations' own listener may
         // have run before this one (language switch, title/slug in the current language)
         if (SimpleTranslations::enabled()) {
             app(AdjustBlueprint::class)->handle($event);
         }
+    }
+
+    /**
+     * A slideshow's artist is hidden in the stack an artist opens it in ("Add slideshow" fills it
+     * in, see Fieldtypes\Slideshows) and a select everywhere else in the CP (the collection's own
+     * listing), so a slideshow created there still gets its artist. The stack loads the form as
+     * JSON, a CP page through Inertia. Set on every lookup: the adjusted blueprint is reused.
+     */
+    protected static function artistSelect($blueprint, string $collection, $entry): void
+    {
+        $relation = SyncRelations::RELATIONS['artists'];
+
+        if ($collection !== $relation['children'] || ! $blueprint->hasField($relation['parent']) || ! Statamic::isCpRoute()) {
+            return;
+        }
+
+        $request = request();
+        $inArtist = $request->wantsJson() && $request->isMethod('GET')
+            && ($request->input('values.'.$relation['parent']) || $entry?->get($relation['parent']));
+
+        $blueprint->ensureFieldHasConfig($relation['parent'], ['visibility' => $inArtist ? 'hidden' : 'visible']);
     }
 
     protected static function generatedTitle(array $contents): array

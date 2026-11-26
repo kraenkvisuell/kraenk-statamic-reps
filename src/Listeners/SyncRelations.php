@@ -16,7 +16,8 @@ use Statamic\Facades\Entry;
  * isn't saved afterwards. With `artist_categories_order`, the artist's categories follow its
  * slideshows (new ones appended, the editor's order kept).
  *
- * `complete`: the parent's list always holds every child that points at it. The artist's
+ * `complete`: the parent's list always holds every child that points at it, and only those
+ * (a slideshow given another artist leaves the old one's list). The artist's
  * slideshows field has no unlink for existing slideshows (resources/js/cp.js), so a slideshow
  * missing from the list was dropped by a form opened before it was created; saving that form
  * (or the slideshow) puts it back. Special categories can unlink, so only new projects are added.
@@ -85,12 +86,21 @@ class SyncRelations
 
     protected function syncParent(EntryContract $child, array $relation): void
     {
+        $parentId = collect((array) $child->get($relation['parent']))->first();
+
+        // moved to another artist (the select outside the artist): off the old one's list
+        $oldId = collect((array) $child->getOriginal($relation['parent']))->first();
+
+        if ($relation['complete'] && $oldId && $oldId !== $parentId && $old = Entry::find($oldId)) {
+            $old->set($relation['field'], array_values(array_diff((array) $old->get($relation['field'], []), [$child->id()])))->saveQuietly();
+            $this->parentChanged($old);
+        }
+
         // new: never saved before this save (the original values are only set after it)
         if (! $relation['complete'] && $child->getOriginal() !== []) {
             return;
         }
 
-        $parentId = collect((array) $child->get($relation['parent']))->first();
         $parent = $parentId ? Entry::find($parentId) : null;
 
         if (! $parent || ! $parent->isRoot() || $parent->collectionHandle() !== array_search($relation, static::RELATIONS, true)) {

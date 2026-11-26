@@ -124,9 +124,11 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   `special_category_slug`, `discipline_slug` (artists), `route_segment` (categories).
   `Listeners\SyncRelations` keeps both sides of artist `slideshows` ↔ slideshow `artist` (special
   category `projects` ↔ special project `special_category`): saving the parent sets the children's
-  field; "Add slideshow" opens the create form with the (hidden) artist filled in, and the saved
+  field; "Add slideshow" opens the create form with the artist filled in, and the saved
   slideshow joins the artist's list even when the artist form isn't saved; an artist's list always
-  holds every slideshow pointing at it (a form opened before a slideshow was added can't drop it).
+  holds exactly the slideshows pointing at it (a form opened before a slideshow was added can't
+  drop it; a slideshow given another artist moves). The artist is hidden in the stacks an artist
+  opens and a select on the collection's own pages (`AdjustBlueprints::artistSelect`).
   `Listeners\RemoveDeletedChildren` takes a deleted slideshow / special project off the list
   (Statamic doesn't remove entry references; the CP showed "This item is unavailable"), and
   `Listeners\LogDeletions` logs every deleted entry with the user. `cp.nested_collections` (e.g.
