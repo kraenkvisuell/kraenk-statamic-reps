@@ -65,6 +65,17 @@ class SlideshowItemController extends CpController
         return [$field => $first];
     }
 
+    /**
+     * "Delete" in the row's dropdown (after the confirmation modal). The artist's list loses the
+     * id on the deletion (Listeners\RemoveDeletedChildren), the row is removed in the form.
+     */
+    public function destroy(string $id)
+    {
+        $this->slideshow($id, 'delete')->delete();
+
+        return response()->noContent();
+    }
+
     protected function slideshow(string $id, string $ability)
     {
         $slideshow = Entry::find($id);

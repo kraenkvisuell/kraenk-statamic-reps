@@ -65,7 +65,7 @@ Statamic.booting(() => {
 
 // Rows of the artist's slideshows field (Fieldtypes\Slideshows), like the old Nova list: position
 // dropdown, title with categories, the works' thumbnails, number of works, actions (no unlink: a
-// slideshow always belongs to its artist). Built from Statamic's UI components (ui.statamic.dev);
+// slideshow always belongs to its artist; "Delete" deletes it after a confirmation modal). Built from Statamic's UI components (ui.statamic.dev);
 // extends Statamic's own row (inline edit stack). `$parent` is the relationship input.
 Statamic.booted(() => {
     const Base = Statamic.$app.component('relationship-input')?.components?.RelatedItem;
@@ -80,6 +80,8 @@ Statamic.booted(() => {
 
     Statamic.$app.component('reps-slideshow-item', {
         extends: Base,
+
+        data: () => ({ confirmingDelete: false, deleting: false }),
 
         computed: {
             reps() {
@@ -109,6 +111,21 @@ Statamic.booted(() => {
                         this.item.status = data.status;
                     })
                     .catch(() => this.$toast.error(__('Something went wrong')));
+            },
+
+            // deleted right away; the server also takes it off the artist's saved list
+            // (RemoveDeletedChildren), the form drops the row
+            destroy() {
+                this.deleting = true;
+                this.$axios
+                    .delete(url(this.item.id))
+                    .then(() => {
+                        this.confirmingDelete = false;
+                        this.$toast.success(__('Deleted'));
+                        this.$emit('removed');
+                    })
+                    .catch(() => this.$toast.error(__('Something went wrong')))
+                    .finally(() => (this.deleting = false));
             },
 
             // after editing in the stack: categories and works may have changed too
@@ -165,6 +182,7 @@ Statamic.booted(() => {
                     this.editable && valid && !inCategory && reps.visible_in_overview !== null && reps.visible_in_overview !== undefined
                         ? h(DropdownItem, { text: __(reps.visible_in_overview ? 'Hide in the artist overview' : 'Show in the artist overview again'), onClick: () => this.toggle('visible_in_overview') })
                         : null,
+                    valid && reps.can_delete ? h(DropdownItem, { text: __('Delete'), variant: 'destructive', onClick: () => (this.confirmingDelete = true) }) : null,
                     // only to clean up a slideshow that no longer exists
                     valid ? null : h(DropdownItem, { text: __('Unlink'), variant: 'destructive', onClick: () => this.$emit('removed') }),
                 ]),
@@ -189,6 +207,16 @@ Statamic.booted(() => {
                 h('div', { class: 'flex flex-1 flex-wrap items-start gap-3' }, [details, thumbnails]),
                 works,
                 actions,
+                this.confirmingDelete ? h(Vue.resolveComponent('confirmation-modal'), {
+                    open: true,
+                    title: __('Delete Entry'),
+                    bodyText: __('Are you sure you want to delete this entry?'),
+                    buttonText: __('Delete'),
+                    danger: true,
+                    busy: this.deleting,
+                    onConfirm: () => this.destroy(),
+                    onCancel: () => (this.confirmingDelete = false),
+                }) : null,
                 this.isEditing ? h(InlineEditForm, {
                     item,
                     component: this.formComponent,

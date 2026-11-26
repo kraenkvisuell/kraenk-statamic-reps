@@ -8,6 +8,7 @@ use Kraenkvisuell\StatamicReps\Reps;
 use Statamic\Contracts\Entries\Entry as EntryContract;
 use Statamic\Facades\Asset;
 use Statamic\Facades\AssetContainer;
+use Statamic\Facades\User;
 use Statamic\Fieldtypes\Entries;
 
 /**
@@ -112,6 +113,7 @@ class Slideshows extends Entries
                 'works' => $works->count(),
                 'works_label' => Reps::label($works->count() === 1 ? 'work' : 'works'),
                 'published' => $slideshow->published(),
+                'can_delete' => ! $categoryId && (bool) User::current()?->can('delete', $slideshow),
                 // null where the site has no artist overview
                 'visible_in_overview' => Reps::feature('overview') && ! $categoryId ? $root->get('is_visible_in_overview', true) !== false : null,
                 'overview_label' => 'Show in the artist overview',

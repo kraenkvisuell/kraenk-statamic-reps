@@ -15,7 +15,8 @@ The artist's `slideshows` field is a `reps_slideshows` field (an entries field, 
 with rows like the old Nova list: a position dropdown (plus drag), the categories under the title,
 the works' thumbnails (`cp.slideshow_thumbnails`, videos play muted), the number of works (opens the
 slideshow in a stack) and actions: edit, publish/unpublish, hide in / show in the artist overview
-(feature `overview`); no unlink, a slideshow always belongs to its artist (only a slideshow that no longer exists can be unlinked). Instead of Statamic's
+(feature `overview`), delete (with a confirmation modal, for users who may delete slideshows; the
+slideshow is deleted right away and leaves the artist's list); no unlink, a slideshow always belongs to its artist (only a slideshow that no longer exists can be unlinked). Instead of Statamic's
 "Create"/"Link" buttons it has an "Add slideshow" button (the `labels.slideshow` label) on the right
 above the list (adds the new slideshow at position 1) and below it (adds it at the end); new
 slideshows start as drafts (`default_status: draft`, written by `reps:install`). The actions save the slideshow right away
