@@ -434,3 +434,94 @@ Statamic.booting(() => {
         },
     });
 });
+
+// "Add images" of a slideshow (Fieldtypes\AddWorks): Statamic's assets field, whose files leave
+// it as soon as they're uploaded (one at a time, in the order chosen) or chosen: each becomes a
+// work of the set meta.set with that set's defaults, appended to the replicator meta.works_field
+// like its own "Add work" does (set meta first, then the value), collapsed. Replicators only read
+// their collapsed state once, so they follow meta.collapsed when someone else changes it.
+Statamic.booted(() => {
+    const app = Statamic.$app;
+    const clone = (value) => JSON.parse(JSON.stringify(value ?? null));
+    const sameIds = (a, b) => JSON.stringify(a ?? []) === JSON.stringify(b ?? []);
+    const uid = () => Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
+
+    const Replicator = app.component('replicator-fieldtype');
+    if (Replicator) {
+        app.component('replicator-fieldtype', {
+            extends: Replicator,
+            watch: {
+                'meta.collapsed'(collapsed) {
+                    if (collapsed && !sameIds(collapsed, this.collapsed)) this.collapsed = clone(collapsed);
+                },
+            },
+        });
+    }
+
+    const Assets = app.component('assets-fieldtype');
+    if (!Assets) return;
+
+    app.component('reps_add_works-fieldtype', {
+        extends: Assets,
+        watch: {
+            // deep: uploads are pushed onto the array
+            assets: {
+                deep: true,
+                handler(assets) {
+                    if (this.initializing || !assets.length) return;
+                    const added = [...assets];
+                    this.assets = [];
+                    // in order, also when the set's defaults are still loading for an earlier file
+                    this.repsQueue = (this.repsQueue || Promise.resolve())
+                        .then(() => this.repsAddWorks(added))
+                        .catch(() => this.$toast.error(__('Something went wrong')));
+                },
+            },
+        },
+        methods: {
+            // the value stays empty: otherwise the base field's value watcher loads the files again
+            update() {},
+            async repsSet(field, handle) {
+                const meta = this.publishContainer.meta[field] || {};
+                if (meta.new?.[handle]) return { new: meta.new[handle], defaults: meta.defaults?.[handle] || {} };
+                this.repsSetCache ??= {};
+                this.repsSetCache[handle] ??= this.$axios.post(cp_url('fieldtypes/replicator/set'), {
+                    token: this.publishContainer.blueprint.token,
+                    reference: this.publishContainer.reference,
+                    field,
+                    set: handle,
+                }).then((response) => response.data);
+                return this.repsSetCache[handle];
+            },
+            async repsAddWorks(assets) {
+                const field = this.meta.works_field || 'works';
+                const handle = this.meta.set || 'image';
+                const data = await this.repsSet(field, handle);
+                const container = this.injectedPublishContainer;
+
+                const sets = assets.map((asset) => ({
+                    ...clone(data.defaults),
+                    _id: uid(),
+                    type: handle,
+                    enabled: true,
+                    file: [asset.id],
+                }));
+
+                const meta = this.publishContainer.meta[field] || {};
+                const existing = { ...(meta.existing || {}) };
+                sets.forEach((set, i) => {
+                    const setMeta = clone(data.new) || {};
+                    // the asset is known already: no request per thumbnail
+                    if (setMeta.file) setMeta.file = { ...setMeta.file, data: [assets[i]] };
+                    existing[set._id] = setMeta;
+                });
+                const values = this.publishContainer.values[field] || [];
+                const collapsed = meta.collapsed ? [...meta.collapsed, ...sets.map((set) => set._id)] : meta.collapsed;
+
+                container.setFieldMeta(field, { ...meta, existing, collapsed });
+                await this.$nextTick();
+                container.setFieldValue(field, [...values, ...sets]);
+            },
+        },
+    });
+});

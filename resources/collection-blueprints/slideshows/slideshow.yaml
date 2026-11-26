@@ -45,6 +45,14 @@ tabs:
                         - { handle: textbox_order, field: { type: button_group, display: Order, options: { image_text: 'Image, text', text_image: 'Text, image' }, width: 50 } }
                         - { handle: textbox_fontsize, field: { type: button_group, display: 'Font size', options: { small: Small, medium: Medium, large: Large }, width: 50 } }
                         - { handle: file, field: { type: assets, display: 'Image (optional)', container: main, max_files: 1 } }
+          - handle: add_works
+            field:
+              type: reps_add_works
+              display: 'Add images'
+              instructions: 'Upload or choose several files at once: each one is added as an "Image / video" at the end of the list above.'
+              container: main
+              mode: list
+              localizable: false
   overview:
     display: Overview
     sections:

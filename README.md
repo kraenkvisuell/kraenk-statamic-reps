@@ -45,6 +45,14 @@ expanded row, saved with the slideshow. `Listeners\AdjustBlueprints::workRows` m
 fields (`reps_large_preview`, `reps_flag`, `replicator_preview: false` for the rest);
 `resources/js/cp.js` extends Statamic's assets, toggle and entries fieldtypes only for marked fields.
 
+"Add images" below the works (`add_works`, `Fieldtypes\AddWorks`) is an assets field for several
+files at once (upload, drop or choose from the container): each file becomes an "Image / video"
+work with the set's defaults, appended collapsed to the end of the works right away, in the order
+the uploads finish (one at a time, in the order chosen). The field itself saves nothing. Config:
+`works_field` (default `works`), `set` (default `image`) and the assets field's own (`container`,
+`folder`). Statamic's replicator only reads its collapsed rows once, so cp.js lets every
+replicator follow `meta.collapsed` when it changes from outside.
+
 ## Translations (multi-site)
 
 On a multi-site site (kombinatrotweiss) every language is edited in the default site's form; the
