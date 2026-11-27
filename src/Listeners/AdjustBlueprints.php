@@ -294,7 +294,7 @@ class AdjustBlueprints
             $field = static::workRows($field);
         }
 
-        if (in_array($handle, ['slideshows', 'works', 'categories', 'disciplines'], true) && isset($field['display'])) {
+        if (in_array($handle, ['slideshow', 'slideshows', 'works', 'categories', 'disciplines'], true) && isset($field['display'])) {
             $field['display'] = Reps::label($handle);
         }
 
