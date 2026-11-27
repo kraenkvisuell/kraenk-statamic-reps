@@ -72,5 +72,6 @@ tabs:
     sections:
       -
         fields:
+          - { handle: create_news, field: { type: reps_create_news, display: News, hide_display: true, localizable: false, reps_feature: news_from_project } }
           - { handle: slug, field: { type: slug, required: true, localizable: false, validate: 'max:200' } }
           - { handle: legacy_id, field: { type: integer, display: 'Old Nova id', read_only: true, visibility: read_only, localizable: false } }

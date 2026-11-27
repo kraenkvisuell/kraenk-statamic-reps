@@ -196,6 +196,9 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   slideshows of the artist chosen above it (none without an artist; Statamic's own select loaded
   every slideshow in one request, ~2,000 on wfr). Changing or clearing the artist clears the
   slideshow and reloads the options; both are clearable.
+- **News from a slideshow** (feature `news_from_project`, wfr, `Fieldtypes\CreateNews`): a saved
+  slideshow has a "Create news item" button in its sidebar that opens the news form in a stack
+  with the artist and the slideshow filled in. Not shown while the slideshow is being created.
 - **Generated news titles** (feature `news_headline`, wfr): the text on a news item is its
   `headline` (the old title); the title is "Artist / Project" (`Support\NewsTitle`: the project's
   artist when the item has none, else the headline or subtitle, else "News"), via the collection's

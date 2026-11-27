@@ -562,3 +562,31 @@ Statamic.booted(() => {
         },
     });
 });
+
+// "Create news item" in a saved slideshow (Fieldtypes\CreateNews): Statamic's relationship
+// CreateButton, which opens the news create form (artist and slideshow filled in) in a stack.
+Statamic.booted(() => {
+    const CreateButton = Statamic.$app.component('relationship-input')?.components?.CreateButton;
+
+    if (!CreateButton) {
+        return;
+    }
+
+    Statamic.$app.component('reps_create_news-fieldtype', {
+        inheritAttrs: false,
+        props: { meta: { type: Object, default: () => ({}) } },
+        render() {
+            const creatables = this.meta?.creatables || [];
+
+            return creatables.length ? Vue.h(CreateButton, {
+                creatables,
+                component: this.meta.formComponent,
+                componentProps: this.meta.formComponentProps,
+                stackSize: this.meta.formStackSize,
+                icon: 'plus',
+                text: __('Create news item'),
+                onCreated: () => Statamic.$toast.success(__('News item created')),
+            }) : null;
+        },
+    });
+});

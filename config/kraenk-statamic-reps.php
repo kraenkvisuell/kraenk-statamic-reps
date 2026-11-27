@@ -68,6 +68,7 @@ return [
         'news_articles' => false,          // date, abstract, overview image, sticky (krw)
         'news_post_types' => false,        // post / artist link / slideshow link, placeholder text (visualeyes)
         'news_link' => false,              // an own link instead of the artist / slideshow
+        'news_from_project' => false,      // "Create news item" in a saved slideshow, artist and slideshow filled in (wfr)
         'artist_copy_links' => false,      // "Copy Link" buttons in the CP's artist list (a:<id> / b:<id>, krw)
     ],
 

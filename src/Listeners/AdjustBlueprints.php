@@ -29,7 +29,7 @@ class AdjustBlueprints
         }
 
         if ($blueprint->contents()['reps_adjusted'] ?? false) {
-            static::artistSelect($blueprint, $collection, $event->entry);
+            static::perEntry($blueprint, $collection, $event->entry);
 
             return;
         }
@@ -47,12 +47,23 @@ class AdjustBlueprints
         }
 
         $blueprint->setContents($contents);
-        static::artistSelect($blueprint, $collection, $event->entry);
+        static::perEntry($blueprint, $collection, $event->entry);
 
         // the translated fields exist only now; simple-statamic-translations' own listener may
         // have run before this one (language switch, title/slug in the current language)
         if (SimpleTranslations::enabled()) {
             app(AdjustBlueprint::class)->handle($event);
+        }
+    }
+
+    /** What depends on the entry: set on every lookup, the adjusted blueprint is reused. */
+    protected static function perEntry($blueprint, string $collection, $entry): void
+    {
+        static::artistSelect($blueprint, $collection, $entry);
+
+        // "Create news item" (Fieldtypes\CreateNews) only in a saved slideshow
+        if ($blueprint->hasField('create_news')) {
+            $blueprint->ensureFieldHasConfig('create_news', ['visibility' => $entry?->id() ? 'visible' : 'hidden']);
         }
     }
 
