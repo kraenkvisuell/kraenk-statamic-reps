@@ -15,8 +15,8 @@ tabs:
           - { handle: image, field: { type: assets, display: 'Image or video', instructions: 'Empty: an image of the slideshow / artist.', container: main, max_files: 1, width: 50 } }
           - { handle: overview_image, field: { type: assets, display: 'Overview image', container: main, max_files: 1, width: 50, reps_feature: news_articles } }
           - { handle: image_placeholder, field: { type: text, display: 'Text when there is no image', reps_feature: news_post_types } }
-          - { handle: artist, field: { type: entries, display: Artist, collections: [artists], max_items: 1, mode: select, width: 50 } }
-          - { handle: slideshow, field: { type: entries, display: Slideshow, collections: [slideshows], max_items: 1, mode: select, clearable: true, width: 50 } }
+          - { handle: artist, field: { type: entries, display: Artist, collections: [artists], max_items: 1, mode: select, clearable: true, width: 50 } }
+          - { handle: slideshow, field: { type: reps_artist_slideshows, display: Slideshow, collections: [slideshows], max_items: 1, mode: select, clearable: true, width: 50 } }
           - { handle: link, field: { type: link, display: 'Link (instead of the artist / slideshow)', reps_feature: news_link } }
           - { handle: is_sticky, field: { type: toggle, display: Sticky, width: 25, reps_feature: news_articles } }
           - { handle: show_logo_as_subline, field: { type: toggle, display: 'Logo as subline', width: 25, reps_feature: news_post_types } }

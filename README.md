@@ -192,6 +192,10 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   the colour as swatch and hex code (feature `artist_bgcolor`). Disciplines have a colour field only with the feature `discipline_bgcolor`. The CP page list shows the page
   colour the same way (feature `page_bgcolor`, `Cp\ColorColumn`), the news list too (feature
   `work_bgcolor`).
+- **Slideshow of a news item** (`Fieldtypes\ArtistSlideshows`): the select only offers the
+  slideshows of the artist chosen above it (none without an artist; Statamic's own select loaded
+  every slideshow in one request, ~2,000 on wfr). Changing or clearing the artist clears the
+  slideshow and reloads the options; both are clearable.
 - **Generated news titles** (feature `news_headline`, wfr): the text on a news item is its
   `headline` (the old title); the title is "Artist / Project" (`Support\NewsTitle`: the project's
   artist when the item has none, else the headline or subtitle, else "News"), via the collection's

@@ -525,3 +525,40 @@ Statamic.booted(() => {
         },
     });
 });
+
+// The slideshow of a news item (Fieldtypes\ArtistSlideshows): Statamic's entries select, asking
+// only for the slideshows of the artist chosen in meta.artist_field (`?artist=`, none without an
+// artist). Statamic's select loads its options once and doesn't watch its URL, so the field is
+// rebuilt (new key) when the artist changes; the slideshow is cleared then, it belonged to the
+// other (or no) artist.
+Statamic.booted(() => {
+    const app = Statamic.$app;
+    const Fieldtype = app.component('relationship-fieldtype');
+    // the fieldtype may be extended already (work rows above): its template and URL are on a base
+    const inherited = (get) => { for (let c = Fieldtype; c; c = c.extends) if (get(c)) return get(c); };
+    const render = inherited((c) => c.render);
+    const selectionsUrl = inherited((c) => c.computed?.selectionsUrl);
+    if (!render || !selectionsUrl) return;
+
+    app.component('reps_artist_slideshows-fieldtype', {
+        extends: Fieldtype,
+        computed: {
+            repsArtist() {
+                const value = this.publishContainer.values?.[this.meta.artist_field || 'artist'];
+                return (Array.isArray(value) ? value[0] : value) || '';
+            },
+            selectionsUrl() {
+                const url = selectionsUrl.call(this);
+                return `${url}&artist=${encodeURIComponent(this.repsArtist)}`;
+            },
+        },
+        watch: {
+            repsArtist() {
+                if ((this.value || []).length) this.update([]);
+            },
+        },
+        render(...args) {
+            return Vue.cloneVNode(render.apply(this, args), { key: `artist-${this.repsArtist}` });
+        },
+    });
+});
