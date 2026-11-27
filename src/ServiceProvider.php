@@ -4,7 +4,10 @@ namespace Kraenkvisuell\StatamicReps;
 
 use Illuminate\Support\Facades\Event;
 use Kraenkvisuell\StatamicReps\Console\Commands;
+use Kraenkvisuell\StatamicReps\Entries\EloquentEntryRepository;
 use Kraenkvisuell\StatamicReps\Support\GlobalBlueprints;
+use Statamic\Contracts\Entries\EntryRepository as EntryRepositoryContract;
+use Statamic\Eloquent\Entries\EntryRepository as EloquentDriverEntryRepository;
 use Statamic\Events\EntrySaving;
 use Statamic\Events\GlobalVariablesBlueprintFound;
 use Statamic\Events\GlobalVariablesSaved;
@@ -82,6 +85,11 @@ class ServiceProvider extends AddonServiceProvider
         $defaults = require __DIR__.'/../config/kraenk-statamic-reps.php';
         $site = $this->app['config']->get('kraenk-statamic-reps', []);
         $this->app['config']->set('kraenk-statamic-reps', Reps::mergeConfig($defaults, $site));
+
+        // structure changes write the entries' order without a queued full save per entry
+        $this->app->extend(EntryRepositoryContract::class, fn ($repository, $app) => get_class($repository) === EloquentDriverEntryRepository::class
+            ? $app->make(EloquentEntryRepository::class)
+            : $repository);
     }
 
     public function bootAddon(): void

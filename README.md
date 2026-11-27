@@ -196,6 +196,11 @@ Then: `php artisan vendor:publish --tag=kraenk-statamic-reps-config`, set the si
   slideshows of the artist chosen above it (none without an artist; Statamic's own select loaded
   every slideshow in one request, ~2,000 on wfr). Changing or clearing the artist clears the
   slideshow and reloads the options; both are clearable.
+- **Entry order without a save per entry** (`Entries\EloquentEntryRepository`, eloquent driver):
+  when a structure changes (a new news item goes first, an entry is deleted or moved) the driver
+  queued a job per moved entry that saved it again (~2,200 jobs for one news item on wfr, 50 s
+  with a sync queue). The order is written straight into the `order` column instead; only entries
+  whose parent changed are still saved.
 - **News from a slideshow** (feature `news_from_project`, wfr, `Fieldtypes\CreateNews`): a saved
   slideshow has a "Create news item" button in its sidebar that opens the news form in a stack
   with the artist and the slideshow filled in. Not shown while the slideshow is being created.
