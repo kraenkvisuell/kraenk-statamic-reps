@@ -60,7 +60,7 @@ tabs:
         fields:
           - { handle: is_visible_in_overview, field: { type: toggle, display: 'Show in the artist overview', default: true, width: 50, reps_feature: overview } }
           - { handle: show_title, field: { type: toggle, display: 'Show title', default: true, width: 50, reps_feature: show_title } }
-          - { handle: title_position, field: { type: select, display: 'Title position', options: { bottom_left: 'Bottom left', bottom_right: 'Bottom right', top_left: 'Top left', top_right: 'Top right' }, width: 50, reps_feature: title_position } }
+          - { handle: title_position, field: { type: select, display: 'Title position', options: { bottom_left: 'Bottom left', bottom_right: 'Bottom right', top_left: 'Top left', top_right: 'Top right' }, default: bottom_left, width: 50, reps_feature: title_position } }
           - { handle: break_after_in_overviews, field: { type: button_group, display: 'Break after', options: { none: None, small: Small, regular: Regular, large: Large }, width: 50, reps_feature: break_after } }
           - { handle: starts_right, field: { type: toggle, display: 'Starts right', width: 50, reps_feature: starts_right } }
   seo:
